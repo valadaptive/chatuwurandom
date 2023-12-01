@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"moduleResolution": "NodeNext",
+		"sourceMap": true,
+		"strictNullChecks": true,
+		"resolveJsonModule": true,
+		"strict": true,
+		"module": "NodeNext",
+		"composite": true,
+		"jsx": "preserve",
+		"jsxImportSource": "preact",
+		"target": "es2020",
+		"noErrorTruncation": true,
+		"outDir": "build"
+	},
+	"include": [
+		"src/**/*"
+	]
+}
