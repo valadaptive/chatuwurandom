@@ -1,0 +1,34 @@
+- Basic functionality
+    - Connect to AI (done)
+    - Send chats and receive responses (done)
+    - Chat display (done)
+    - Cancel in-progress generation
+- Save and load sessions
+    - Session folder w/ autosave using FileSystem API
+- History editing (done)
+- Token streaming (done)
+- Markdown / code / plaintext view options (done)
+    - Caching to make it fast (done)
+    - CodeMirror and/or ProseMirror? (done)
+- Lore
+    - Memory
+    - Author's Note (where does it go?)
+    - World Info (where is it inserted?)
+- Parse third-party lorebooks
+- Modes
+    - Adventure
+        - Configure user prompt character (default ">")
+        - CYOA vs freeform?
+    - Chat
+        - Configure various prompts; see SillyTavern
+    - Story
+- Multi-backend support
+    - KoboldCpp
+    - LocalAI
+    - Remote OpenAI?
+- Grammar sampling
+    - Grammar editor
+- Custom UI elements and a language that maps them to AI-generated stuff
+    - e.g. the AI can respond with options and you can turn them into buttons
+    - Maybe just custom JS that returns JSON
+    - Sandbox with https://github.com/bytecodealliance/javy

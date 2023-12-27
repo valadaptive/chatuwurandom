@@ -1,0 +1,43 @@
+@use '../../theme.scss';
+
+.chat-display {
+    flex: 1 1 0;
+    background-color: theme.$base-color-tertiary;
+    padding: 0.5rem;
+
+    border-radius: theme.$radius;
+    overflow-y: scroll;
+}
+
+.stream-text {
+    color: theme.$yellow;
+}
+
+.markdown-node {
+    animation: flash 1s ease-out 0s;
+    background: #000000;
+}
+
+@keyframes flash {
+    from {
+        background: #ffbb00;
+    }
+    to {
+        background: #000000;
+    }
+}
+.unimplemented-node {
+    background-color: #c9334c;
+}
+
+.markdown {
+    overflow-wrap: break-word;
+
+    & pre {
+        white-space: pre-wrap;
+    }
+}
+
+.tight > li > p {
+    display: inline;
+}

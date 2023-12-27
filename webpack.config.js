@@ -3,20 +3,20 @@
  * which was itself extracted from https://github.com/preactjs/preact-cli/blob/691a4e2a3e3d2b939b1b454f783f5c9ee14ca067/packages/cli/lib/lib/webpack/webpack-base-config.js
  */
 
-const webpack = require('webpack');
-const {resolve} = require('path');
-const {existsSync} = require('fs');
-const autoprefixer = require('autoprefixer');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
-const ProgressBarPlugin = require('progress-bar-webpack-plugin');
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
-const createBabelConfig = require('./babel-config.js');
-const {merge} = require('webpack-merge');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const HtmlPlugin = require('html-webpack-plugin');
+import webpack from 'webpack';
+import {resolve} from 'path';
+import {existsSync} from 'fs';
+import autoprefixer from 'autoprefixer';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import RemoveEmptyScriptsPlugin from 'webpack-remove-empty-scripts';
+import ProgressBarPlugin from 'progress-bar-webpack-plugin';
+import ForkTsCheckerWebpackPlugin from 'fork-ts-checker-webpack-plugin';
+import createBabelConfig from './babel-config.js';
+import {merge} from 'webpack-merge';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import HtmlPlugin from 'html-webpack-plugin';
 
 const isProd = process.env.NODE_ENV === 'production';
 const cwd = '.';
@@ -70,13 +70,6 @@ function baseConfig () {
                 'react-dom': 'preact-compat',
                 'preact-compat': 'preact-compat',
                 'react-addons-css-transition-group': 'preact-css-transition-group'
-            },
-            fallback: {
-                buffer: require.resolve('buffer'),
-                util: false,
-                stream: require.resolve('readable-stream'),
-                path: false,
-                zlib: false
             }
         },
 
@@ -305,7 +298,7 @@ function devConfig () {
     };
 }
 
-module.exports = merge(
+export default merge(
     baseConfig(),
     (isProd ? prodConfig : devConfig)()
 );

@@ -1,0 +1,121 @@
+/*:root {
+    --base-color-primary: #20202e;
+    --base-color-secondary: #1a1825;
+    --base-color-secondary-dark: #14121f;
+    --base-color-tertiary: #0b0813;
+
+    --text: #e2eaf2;
+    --text-detail: #8993ab;
+    --icon-detail: #54586e;
+
+    --interactive-normal: #656880;
+    --interactive-hover: #808ea0;
+    --interactive-active: #9cb5be;
+    --interactive-muted: #474257;
+    --divider: #373344;
+
+    --brand: rgb(98, 76, 150);
+    --brand-hover: rgb(71, 59, 124);
+    --brand-active: rgb(64, 58, 121);
+    --brand-muted: rgb(76, 69, 94);
+
+    --red: rgb(206, 40, 53);
+    --red-hover: rgb(153, 37, 72);
+    --red-active: rgb(119, 29, 64);
+    --red-muted: rgb(131, 50, 63);
+
+    --yellow: rgb(238, 179, 49);
+    --yellow-hover: rgb(201, 135, 59);
+    --yellow-active: rgb(190, 109, 42);
+    --yellow-muted: rgb(172, 124, 61);
+
+    --green: rgb(16, 174, 106);
+    --green-hover:rgb(32, 138, 120);
+    --green-active:rgb(33, 114, 114);
+    --green-muted: rgb(67, 141, 122);
+
+    --pane-padding: 1rem;
+    --corner-radius: 0.25rem;
+}*/
+
+:root {
+    --base-color-primary: #302947;
+    --base-color-secondary: #231c38;
+    --base-color-secondary-dark: #181129;
+    --base-color-tertiary: #0e0918;
+
+    --text: #edf6f8;
+    --text-detail: #a2acbc;
+    --icon-detail: #515072;
+
+    --interactive-normal: #656880;
+    --interactive-hover: #808ea0;
+    --interactive-active: #9cb5be;
+    --interactive-muted: #474257;
+    --divider: #373344;
+
+    --brand: #503f76;
+    --brand-hover: #3c3267;
+    --brand-active: #2b2652;
+    --brand-muted: #3f3d4d;
+    --brand-light: #71559b;
+    --brand-lighter: #916db8;
+
+    --red: rgb(206, 40, 53);
+    --red-hover: rgb(153, 37, 72);
+    --red-active: rgb(119, 29, 64);
+    --red-muted: rgb(131, 50, 63);
+
+    --yellow: rgb(238, 179, 49);
+    --yellow-hover: rgb(201, 135, 59);
+    --yellow-active: rgb(190, 109, 42);
+    --yellow-muted: rgb(172, 124, 61);
+
+    --green: rgb(16, 174, 106);
+    --green-hover:rgb(32, 138, 120);
+    --green-active:rgb(33, 114, 114);
+    --green-muted: rgb(67, 141, 122);
+
+    --pane-padding: 1rem;
+    --corner-radius: 0.25rem;
+}
+
+$base-color-primary: var(--base-color-primary);
+$base-color-secondary: var(--base-color-secondary);
+$base-color-secondary-dark: var(--base-color-secondary-dark);
+$base-color-tertiary: var(--base-color-tertiary);
+$text: var(--text);
+$text-detail: var(--text-detail);
+$icon-detail: var(--icon-detail);
+$interactive-normal: var(--interactive-normal);
+$interactive-hover: var(--interactive-hover);
+$interactive-active: var(--interactive-active);
+$interactive-muted: var(--interactive-muted);
+$divider: var(--divider);
+$brand: var(--brand);
+$brand-hover: var(--brand-hover);
+$brand-active: var(--brand-active);
+$brand-muted: var(--brand-muted);
+$brand-light: var(--brand-light);
+$brand-lighter: var(--brand-lighter);
+$red: var(--red);
+$red-hover: var(--red-hover);
+$red-active: var(--red-active);
+$red-muted: var(--red-muted);
+$yellow: var(--yellow);
+$yellow-hover: var(--yellow-hover);
+$yellow-active: var(--yellow-active);
+$yellow-muted: var(--yellow-muted);
+$green: var(--green);
+$green-hover: var(--green-hover);
+$green-active: var(--green-active);
+$green-muted: var(--green-muted);
+
+$pane-padding: var(--pane-padding);
+$radius: var(--corner-radius);
+
+
+
+@mixin bg-fade {
+    transition: background-color 0.25s ease;
+}

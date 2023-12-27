@@ -21,6 +21,7 @@ module.exports = {
     globals: {
 
     },
+    ignorePatterns: ['src/api.ts'],
     overrides: [
         {
             files: ['src/**/*'],
@@ -34,6 +35,20 @@ module.exports = {
                 browser: true,
                 commonjs: true,
                 node: false
+            },
+            rules: tsRules
+        },
+        {
+            files: ['test/**/*'],
+            parserOptions: {
+                'project': './tsconfig.json'
+            },
+            extends: [
+                'plugin:@typescript-eslint/recommended-requiring-type-checking'
+            ],
+            env: {
+                node: true,
+                jest: true
             },
             rules: tsRules
         },

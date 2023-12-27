@@ -1,4 +1,4 @@
-module.exports = function (browsers) {
+export default function (browsers) {
     return {
         presets: [
             [

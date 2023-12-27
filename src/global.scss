@@ -1,4 +1,4 @@
-@use './colors.scss' as col;
+@use './theme.scss';
 
 $font: Inter, sans-serif;
 
@@ -9,21 +9,21 @@ html, body {
 
 body {
     margin: 0;
-    background-color: col.$base-color-primary;
-    color: col.$text;
-    scrollbar-color: col.$base-color-tertiary col.$base-color-primary;
+    background-color: theme.$base-color-primary;
+    color: theme.$text;
+    scrollbar-color: theme.$base-color-tertiary theme.$base-color-primary;
 
     & ::-webkit-scrollbar {
-        background-color: col.$base-color-primary;
+        background-color: theme.$base-color-primary;
     }
 
     & ::-webkit-scrollbar-thumb {
-        background-color: col.$base-color-tertiary;
+        background-color: theme.$base-color-tertiary;
     }
 }
 
 ::selection {
-    background-color: col.$brand;
+    background-color: theme.$brand;
     color: white;
 }
 
@@ -32,7 +32,8 @@ body, button, input {
 }
 
 @mixin textbox {
-    background-color: col.$base-color-tertiary;
+    background-color: theme.$base-color-tertiary;
+    outline: 1px solid theme.$interactive-normal;
     border: none;
     border-radius: 4px;
     color: white;
@@ -41,7 +42,7 @@ body, button, input {
     padding: 0.675rem 0.75rem;
 
     &:focus {
-        outline: 2px solid col.$brand;
+        outline: 2px solid theme.$interactive-active;
     }
 }
 
@@ -57,7 +58,7 @@ textarea {
 
 a {
     text-decoration: none;
-    color: col.$brand;
+    color: theme.$brand-lighter;
 
     &:hover {
         cursor: pointer;

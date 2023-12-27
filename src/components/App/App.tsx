@@ -1,9 +1,27 @@
-import {useAppState, useAction, AppContext} from '../../app-state';
+import style from './style.scss';
+
+import HomePane from '../HomePane/HomePane';
+import ChatPane from '../ChatPane/ChatPane';
+import SettingsPane from '../SettingsPane/SettingsPane';
+import TabbedPanel from '../TabbedPanel/TabbedPanel';
 
 const App = () => {
-    const appState = useAppState();
     return (
-        <>Hello World!</>
+        <div className={style.app}>
+            <TabbedPanel tabs={[
+                {
+                    id: 'home',
+                    panel: <HomePane />,
+                    title: 'Home'
+                },
+                {
+                    id: 'settings',
+                    panel: <SettingsPane />,
+                    title: 'Settings'
+                }
+            ]} initialTab='settings' />
+            <ChatPane />
+        </div>
     );
 };
 

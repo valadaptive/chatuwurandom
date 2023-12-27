@@ -1,0 +1,21 @@
+@use '../../theme.scss';
+
+.chat-input-box {
+    flex: 0 0 auto;
+    border-radius: 4px;
+    background-color: theme.$base-color-tertiary;
+}
+
+.box-and-buttons {
+    display: flex;
+}
+
+.buttons {
+    padding: 0.5rem 0.25rem 0 0;
+    display: flex;
+}
+
+.textbox {
+    flex: 1 1 auto;
+    line-height: 1.5;
+}

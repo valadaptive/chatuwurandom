@@ -1,0 +1,17 @@
+@use '../../theme.scss';
+
+.settings-pane {
+    background-color: theme.$base-color-secondary;
+
+    padding: theme.$pane-padding;
+    flex: 1 1 auto;
+}
+
+.setting {
+    margin-top: 1rem;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 0.25rem;
+}

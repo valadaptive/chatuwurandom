@@ -1,9 +1,9 @@
-@use '../colors.scss' as col;
+@use '../theme.scss';
 
 .prompt {
     margin: auto;
     padding: 2rem;
-    background-color: col.$base-color-secondary;
+    background-color: theme.$base-color-secondary;
     border-radius: 8px;
     font-size: 150%;
     display: flex;
@@ -24,7 +24,7 @@
 }
 
 .divider {
-    border-top: 2px solid col.$divider;
+    border-top: 2px solid theme.$divider;
 }
 
 .grow {
@@ -32,5 +32,5 @@
 }
 
 .error {
-    color: col.$red;
+    color: theme.$red;
 }

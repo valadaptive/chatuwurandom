@@ -14,9 +14,11 @@
 		"jsxImportSource": "preact",
 		"target": "es2020",
 		"noErrorTruncation": true,
-		"outDir": "build"
+		"outDir": "build",
+		"lib": ["es2021"]
 	},
 	"include": [
-		"src/**/*"
+		"src/**/*",
+		"test/**/*.test.ts"
 	]
 }
