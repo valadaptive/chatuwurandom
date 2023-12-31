@@ -1,7 +1,6 @@
 import {createContext} from 'preact';
 import {useContext, useMemo} from 'preact/hooks';
 import {signal, effect, batch, Signal} from '@preact/signals';
-import * as List from 'list';
 import {ChatHistory} from './controller/chat-history';
 
 export enum ChatStatus {
@@ -11,6 +10,7 @@ export enum ChatStatus {
 
 export type ChatState = {
     status: Signal<ChatStatus>,
+    generationProgress: Signal<number>,
     history: ChatHistory,
 };
 
@@ -46,8 +46,8 @@ export const createStore = (): AppState => {
         chatBoxText: signal(''),
         chat: {
             status: signal(ChatStatus.IDLE),
-            history: new ChatHistory(),
-            tokenStream: signal(List.list<string>())
+            generationProgress: signal(0),
+            history: new ChatHistory()
         }
     };
 

@@ -2,7 +2,7 @@ import style from './style.scss';
 
 import type {JSX} from 'preact';
 import {batch, useComputed, useSignal} from '@preact/signals';
-import {useLayoutEffect, useMemo} from 'preact/hooks';
+import {useLayoutEffect, useMemo, useRef} from 'preact/hooks';
 import {Tree, type SyntaxNodeRef, TreeFragment} from '@lezer/common';
 
 import {useAppState} from '../../app-state';
@@ -216,6 +216,8 @@ const renderMarkdown = (
 const ChatDisplay = () => {
     const {chat} = useAppState();
     const markdownCache = useMemo(() => new MarkdownCache(), []);
+    const chatDisplayElem = useRef<HTMLDivElement>(null);
+    const isScrolledToBottom = useRef<boolean>(true);
 
     const markdownTree = useSignal<{tree: Tree, fragments: readonly TreeFragment[]} | null>(null);
     if (!markdownTree.value) {
@@ -235,7 +237,7 @@ const ChatDisplay = () => {
                 fromA: change.from,
                 toA: change.to,
                 fromB: change.from,
-                toB: change.from + (change.insert?.length ?? 0)
+                toB: change.from + change.inserted.length
             }]);
             tree = parser.parse(history.contents.value, fragments);
             fragments = TreeFragment.addTree(tree, fragments);
@@ -258,6 +260,19 @@ const ChatDisplay = () => {
         return markdownCache.mapMarkdown(tree, doc.value, renderMarkdown);
     });
 
+    // Auto-scroll to include new lines if we're scrolled to the bottom
+    useLayoutEffect(() => {
+        const chatDisplay = chatDisplayElem.current!;
+
+        const shouldScrollToBottom = isScrolledToBottom.current;
+        isScrolledToBottom.current = chatDisplay.scrollHeight - chatDisplay.clientHeight <= chatDisplay.scrollTop;
+
+        if (shouldScrollToBottom) {
+            chatDisplay.scrollTo({top: chatDisplay.scrollHeight - chatDisplay.clientHeight + 1});
+        }
+
+    }, [rendered.value]);
+
     const debug = useComputed(() => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (!DEBUG) return null;
@@ -269,7 +284,7 @@ const ChatDisplay = () => {
     }).value;
 
     return (
-        <div className={style.chatDisplay}>
+        <div className={style.chatDisplay} ref={chatDisplayElem}>
             <div className={style.markdown}>{rendered}</div>
             {debug}
         </div>

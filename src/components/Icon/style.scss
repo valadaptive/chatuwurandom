@@ -1,0 +1,51 @@
+@use '../../theme.scss' as col;
+
+.icon {
+    width: 24px;
+    height: 24px;
+    background-color: col.$icon-detail;
+    display: inline-block;
+}
+
+@mixin button-color($hover, $active, $disabled) {
+    &:hover {
+        background-color: $hover;
+    }
+
+    &:active {
+        background-color: $active;
+    }
+
+    &.disabled {
+        background-color: $disabled;
+    }
+}
+
+.button {
+    cursor: pointer;
+    background-color: col.$interactive-normal;
+
+    @include button-color(col.$interactive-hover, col.$interactive-active, col.$interactive-muted);
+
+    &.disabled {
+        cursor: not-allowed;
+    }
+
+    transition: background-color 0.175s ease;
+}
+
+@mixin def-icons($names) {
+    @each $name in $names {
+        .#{$name} {
+            mask-image: url('../../assets/icons/#{$name}.svg');
+        }
+    }
+}
+
+@include def-icons(
+    cancel
+    undo
+    redo
+    retry
+    send
+)

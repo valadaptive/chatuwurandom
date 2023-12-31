@@ -2,7 +2,8 @@
     - Connect to AI (done)
     - Send chats and receive responses (done)
     - Chat display (done)
-    - Cancel in-progress generation
+    - Cancel in-progress generation (done)
+    - Settings panel
 - Save and load sessions
     - Session folder w/ autosave using FileSystem API
 - History editing (done)

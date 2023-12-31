@@ -2,20 +2,45 @@
 
 .chat-input-box {
     flex: 0 0 auto;
-    border-radius: 4px;
-    background-color: theme.$base-color-tertiary;
+    display: flex;
+    flex-direction: column;
 }
 
 .box-and-buttons {
     display: flex;
+    gap: 1rem;
 }
 
 .buttons {
-    padding: 0.5rem 0.25rem 0 0;
     display: flex;
+    padding-right: 0.5rem;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .textbox {
     flex: 1 1 auto;
     line-height: 1.5;
+}
+
+.loading-bar {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+    background-color: theme.$base-color-tertiary;
+    border-radius: theme.$radius;
+    overflow: hidden;
+
+    &.hidden {
+        height: 0;
+        margin-bottom: 0rem;
+    }
+
+    transition: height, margin-bottom 0.25s ease;
+}
+
+.loading-bar-inner {
+    height: 100%;
+    background-color: theme.$brand-light;
+    border-bottom-right-radius: theme.$radius;
+    border-top-right-radius: theme.$radius;
 }

@@ -3,13 +3,13 @@ import style from './style.scss';
 import type {JSX} from 'preact';
 import {useRef, useLayoutEffect} from 'preact/hooks';
 
-import {EditorState} from '@codemirror/state';
-import {EditorView, keymap, lineNumbers} from '@codemirror/view';
-import {defaultKeymap, history, historyKeymap} from '@codemirror/commands';
+import {EditorState, Transaction} from '@codemirror/state';
+import {EditorView, KeyBinding, keymap, lineNumbers} from '@codemirror/view';
+import {defaultKeymap} from '@codemirror/commands';
 import {markdown} from '@codemirror/lang-markdown';
 
 import {useAppState} from '../../app-state';
-import {ChatChangeEvent} from '../../controller/chat-history';
+import {ChatChangeEvent, CodeMirrorChangeMetadata} from '../../controller/chat-history';
 import {language, highlightStyle} from '../../text-processing/markdown';
 import {syntaxHighlighting} from '@codemirror/language';
 
@@ -40,14 +40,31 @@ const ChatEditor = (): JSX.Element => {
     const isHandlingChanges = useRef(false);
 
     useLayoutEffect(() => {
+        const undoCommand = (): boolean => {
+            chat.history.undo();
+            return true;
+        };
+
+        const redoCommand = (): boolean => {
+            chat.history.redo();
+            return true;
+        };
+
+        const historyBindings: readonly KeyBinding[] = [
+            {key: 'Mod-z', run: undoCommand, preventDefault: true},
+            {key: 'Mod-y', run: redoCommand, preventDefault: true},
+            {key: 'Ctrl-Shift-z', run: redoCommand, preventDefault: true}
+        ];
+
         const editorState = EditorState.create({
             doc: chat.history.contents.value,
             extensions: [
-                keymap.of([...defaultKeymap, ...historyKeymap]),
-                history(),
+                keymap.of([...defaultKeymap, ...historyBindings]),
+                EditorState.lineSeparator.of('\n'),
                 lineNumbers(),
                 syntaxHighlighting(highlightStyle),
                 markdown({base: language}),
+                EditorView.lineWrapping,
                 theme
             ]
         });
@@ -59,11 +76,14 @@ const ChatEditor = (): JSX.Element => {
 
                 if (!isHandlingChanges.current) {
                     tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-                        // console.log({fromA, toA, fromB, toB, inserted: inserted.toString()});
                         chat.history.update({
                             from: fromA,
                             to: toA,
-                            insert: inserted.toString()
+                            inserted: inserted.toString(),
+                            timestamp: tr.annotation(Transaction.time)!,
+                            metadata: {
+                                codemirror: new CodeMirrorChangeMetadata(tr.startState.selection, tr.newSelection)
+                            }
                         });
                     });
                 }
@@ -84,7 +104,12 @@ const ChatEditor = (): JSX.Element => {
             const {editorView} = codeMirrorRef.current!;
 
             editorView.dispatch({
-                changes: change
+                changes: {
+                    from: change.from,
+                    to: change.to,
+                    insert: change.inserted
+                },
+                selection: change.metadata?.codemirror?.newSelection
             });
             isHandlingChanges.current = false;
         };
