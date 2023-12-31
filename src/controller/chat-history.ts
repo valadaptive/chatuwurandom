@@ -87,6 +87,10 @@ const MERGE_CHANGE_TIMESTAMP_THRESHOLD = 2000;
 
 export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
     contents: Signal<string>;
+    undoState: Signal<{
+        canUndo: boolean,
+        canRedo: boolean
+    }> = signal({canUndo: false, canRedo: false});
 
     private changes: InvertibleChatChange[] = [];
     private undoCursor: number = 0;
@@ -212,6 +216,13 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         };
     }
 
+    private updateUndoState () {
+        this.undoState.value = {
+            canUndo: this.undoCursor > 0,
+            canRedo: this.undoCursor < this.changes.length
+        };
+    }
+
     update (change: ChatChange) {
         const oldContents = this.contents.value;
 
@@ -228,6 +239,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
 
         this.storeChange(invertibleChange);
 
+        this.updateUndoState();
         this.dispatchEvent(new ChatChangeEvent(change));
     }
 
@@ -236,6 +248,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         const unchange = this.unapplyChange(this.changes[this.undoCursor - 1]);
         this.undoCursor--;
 
+        this.updateUndoState();
         this.dispatchEvent(new ChatChangeEvent(unchange));
     }
 
@@ -252,6 +265,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
 
         this.undoCursor++;
 
+        this.updateUndoState();
         this.dispatchEvent(new ChatChangeEvent(change));
     }
 }

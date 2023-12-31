@@ -63,7 +63,6 @@ class Controller {
         // Cancel generation on the backend before reloading
         const beforeUnloadListener = (event: BeforeUnloadEvent) => {
             this.cancelGeneration();
-            window.removeEventListener('beforeunload', beforeUnloadListener);
             event.preventDefault();
         };
         window.addEventListener('beforeunload', beforeUnloadListener);
@@ -129,6 +128,7 @@ class Controller {
                 this.appState.chat.status.value = ChatStatus.IDLE;
                 // eslint-disable-next-line no-console
                 console.error(err);
+                window.removeEventListener('beforeunload', beforeUnloadListener);
             });
     }
 }
