@@ -42,7 +42,17 @@
     }
 }
 
+.arrow-right {
+    mask-image: url('../../assets/icons/arrow-down.svg');
+    transform: rotate(-90deg);
+}
+
+.arrow-right, .arrow-down {
+    transition: transform 0.175s ease;
+}
+
 @include def-icons(
+    arrow-down
     cancel
     undo
     redo

@@ -3,7 +3,7 @@ import style from './style.scss';
 import type {JSX} from 'preact';
 import classNames from 'classnames';
 
-type IconType = 'cancel' | 'undo' | 'redo' | 'retry' | 'send';
+type IconType = 'arrow-down' | 'arrow-right' | 'cancel' | 'undo' | 'redo' | 'retry' | 'send';
 
 const Icon = ({type, title, size, onClick, disabled}: {
     type: IconType,

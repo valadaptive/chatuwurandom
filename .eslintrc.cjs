@@ -122,7 +122,7 @@ module.exports = {
             allowMultiplePropertiesPerLine: true
         }],
         'operator-linebreak': ['error', 'after'],
-        'prefer-const': ['error'],
+        'prefer-const': ['error', {destructuring: 'all'}],
         'quotes': ['error', 'single', {
             allowTemplateLiterals: true,
             avoidEscape: true

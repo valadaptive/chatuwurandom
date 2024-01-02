@@ -52,7 +52,7 @@ const ChatInputBox = (): JSX.Element => {
         );
     });
 
-    const {canUndo, canRedo} = chat.history.undoState.value;
+    const {canUndo, canRedo, canRetry} = chat.history.undoState.value;
 
     const isGenerating = chat.status.value === ChatStatus.GENERATING;
 
@@ -67,7 +67,7 @@ const ChatInputBox = (): JSX.Element => {
                     <Icon type='send' title='Send' onClick={sendMessage} />}
                 <Icon type='undo' title='Undo' disabled={!canUndo || isGenerating} onClick={() => chat.history.undo()}/>
                 <Icon type='redo' title='Redo' disabled={!canRedo || isGenerating} onClick={() => chat.history.redo()}/>
-                <Icon type='retry' title='Retry' disabled={!canUndo || isGenerating} onClick={() => {
+                <Icon type='retry' title='Retry' disabled={!canRetry || isGenerating} onClick={() => {
                     chat.history.undo();
                     sendMessage();
                 }}/>

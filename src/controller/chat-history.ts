@@ -89,8 +89,9 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
     contents: Signal<string>;
     undoState: Signal<{
         canUndo: boolean,
-        canRedo: boolean
-    }> = signal({canUndo: false, canRedo: false});
+        canRedo: boolean,
+        canRetry: boolean
+    }> = signal({canUndo: false, canRedo: false, canRetry: false});
 
     private changes: InvertibleChatChange[] = [];
     private undoCursor: number = 0;
@@ -219,7 +220,8 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
     private updateUndoState () {
         this.undoState.value = {
             canUndo: this.undoCursor > 0,
-            canRedo: this.undoCursor < this.changes.length
+            canRedo: this.undoCursor < this.changes.length,
+            canRetry: this.undoCursor > 0 && !!this.changes[this.undoCursor - 1].metadata?.textgen
         };
     }
 

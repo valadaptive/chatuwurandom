@@ -2,6 +2,8 @@ import {createContext} from 'preact';
 import {useContext, useMemo} from 'preact/hooks';
 import {signal, effect, batch, Signal} from '@preact/signals';
 import {ChatHistory} from './controller/chat-history';
+import type {AIBackend, Jsonable} from './backends/ai-backend';
+import KoboldCppBackend from './backends/koboldcpp';
 
 export enum ChatStatus {
     IDLE,
@@ -18,9 +20,10 @@ export type ChatState = {
  * Global application state
  */
 export type AppState = {
-    apiUrl: Signal<string>,
     chat: ChatState,
     chatBoxText: Signal<string>,
+    backend: Signal<AIBackend>,
+    allBackendSettings: Signal<Partial<Record<string, Jsonable>>>
 };
 
 export const AppContext = createContext<AppState | undefined>(undefined);
@@ -41,25 +44,32 @@ export const useAction = <T extends unknown[], V>(
 };
 
 export const createStore = (): AppState => {
-    const store = {
-        apiUrl: signal(''),
+    const store: AppState = {
         chatBoxText: signal(''),
         chat: {
             status: signal(ChatStatus.IDLE),
             generationProgress: signal(0),
             history: new ChatHistory()
-        }
+        },
+        backend: signal(new KoboldCppBackend()),
+        allBackendSettings: signal({})
     };
 
     const loadedStateString = localStorage.getItem('savedState');
     if (loadedStateString) {
         try {
             const loadedState = JSON.parse(loadedStateString) as Partial<{
-                apiUrl: string
+                apiUrl: string,
+                backendSettings: Partial<Record<string, Jsonable>>
             }>;
 
             batch(() => {
-                if (loadedState.apiUrl) store.apiUrl.value = loadedState.apiUrl;
+                if (loadedState.backendSettings) store.allBackendSettings.value = loadedState.backendSettings;
+
+                const currentBackendID = store.backend.value.id;
+                if (loadedState.backendSettings?.[currentBackendID]) {
+                    store.backend.value.loadSettings(loadedState.backendSettings[currentBackendID]);
+                }
             });
         } catch (err) {
             // TODO: proper on-screen error reporting
@@ -68,11 +78,32 @@ export const createStore = (): AppState => {
         }
     }
 
+    // Load backend settings on backend change
+    effect(() => {
+        const currentBackend = store.backend.value;
+        const allBackendSettings = store.allBackendSettings.peek();
+        if (Object.prototype.hasOwnProperty.call(allBackendSettings, currentBackend.id)) {
+            currentBackend.loadSettings(allBackendSettings[currentBackend.id]);
+        }
+    });
+
+    // Whenever a backend's settings change, save them in allBackendSettings
+    // TODO: this causes us to load after every save. Find some way to avoid that
+    effect(() => {
+        batch(() => {
+            const currentBackend = store.backend.value;
+            store.allBackendSettings.value = {
+                ...store.allBackendSettings.peek(),
+                [currentBackend.id]: currentBackend.saveSettings()
+            };
+        });
+    });
+
     // Persist some settings across reloads
     effect(() => {
         const savedState = {
             version: 1,
-            apiUrl: store.apiUrl.value
+            backendSettings: store.allBackendSettings.value
         };
 
         localStorage.setItem('savedState', JSON.stringify(savedState));

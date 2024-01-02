@@ -31,23 +31,32 @@ body, button, input {
     font-family: $font;
 }
 
+$textbox-padding-x: 0.75rem;
+$textbox-padding-y: 0.675rem;
+
+
 @mixin textbox {
     background-color: theme.$base-color-tertiary;
     outline: 1px solid theme.$interactive-normal;
     border: none;
     border-radius: 4px;
-    color: white;
+    color: theme.$text;
     font-size: 90%;
     font-weight: 600;
-    padding: 0.675rem 0.75rem;
+    padding: $textbox-padding-y $textbox-padding-x;
+    box-sizing: content-box;
 
-    &:focus {
+    &:focus-within {
         outline: 2px solid theme.$interactive-active;
     }
 }
 
-input[type=text], input[type=password], textarea {
+input[type=text], input[type=password], textarea, select {
     @include textbox();
+}
+
+input[type=checkbox] {
+    accent-color: theme.$interactive-active;
 }
 
 textarea {

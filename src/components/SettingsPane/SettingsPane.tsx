@@ -1,21 +1,16 @@
 import style from './style.scss';
 
 import {useAppState} from '../../app-state';
+import {useComputed} from '@preact/signals';
 
 const SettingsPane = () => {
-    const {apiUrl} = useAppState();
+    const {backend} = useAppState();
+
+    const SettingsPanel = useComputed(() => backend.value.SettingsPanel.bind(backend.value)).value;
 
     return (
         <div className={style.settingsPane}>
-            This will be a settings pane.
-            <div className={style.setting}>
-                <label>API URL:</label>
-                <input
-                    type="text"
-                    value={apiUrl}
-                    onInput={(event) => apiUrl.value = (event.target as HTMLInputElement).value}
-                />
-            </div>
+            <SettingsPanel />
         </div>
     );
 };

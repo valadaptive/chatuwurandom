@@ -1,0 +1,44 @@
+@use '../../theme.scss' as col;
+
+.indicator-wrapper {
+    display: inline-block;
+    vertical-align: middle;
+    overflow: hidden;
+    flex: 0 0 auto;
+}
+
+.indicator {
+    box-sizing: border-box;
+    border-radius: 50%;
+    display: flex;
+
+    &.disabled {
+        border-color: col.$interactive-normal;
+        border-style: solid;
+    }
+
+    &.failed {
+        background-color: col.$red;
+    }
+
+    &.loading {
+        border-color: col.$yellow;
+        border-style: solid;
+        animation: 1s linear infinite spin;
+        border-bottom-color: transparent;
+    }
+
+    &.success {
+        background-color: col.$green;
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

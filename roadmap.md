@@ -3,7 +3,7 @@
     - Send chats and receive responses (done)
     - Chat display (done)
     - Cancel in-progress generation (done)
-    - Settings panel
+    - Settings panel (done)
 - Save and load sessions
     - Session folder w/ autosave using FileSystem API
 - History editing (done)
@@ -11,6 +11,7 @@
 - Markdown / code / plaintext view options (done)
     - Caching to make it fast (done)
     - CodeMirror and/or ProseMirror? (done)
+- Presets save/load
 - Lore
     - Memory
     - Author's Note (where does it go?)
