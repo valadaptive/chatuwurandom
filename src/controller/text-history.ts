@@ -1,14 +1,103 @@
 import {signal, Signal} from '@preact/signals';
-import {TypedEvent, TypedEventTarget} from '../util/typed-events';
 import {EditorSelection} from '@codemirror/state';
 
-export type TextChange = {
+import {TypedEvent, TypedEventTarget} from '../util/typed-events';
+import {generateID} from '../util/id';
+import type {Change} from './change';
+
+export type TextChangeDescriptor = {
     from: number,
     to: number,
     inserted: string,
     timestamp: number,
     metadata?: TextChangeMetadataMap
 };
+
+class TextChange implements Change {
+    readonly id;
+    readonly inverseOf;
+    readonly from;
+    readonly to;
+    readonly inserted;
+    readonly removed;
+    readonly timestamp;
+    readonly metadata;
+
+    constructor ({from, to, inserted, removed, timestamp, metadata, inverseOf}:
+    TextChangeDescriptor & {removed: string, inverseOf?: string}) {
+        this.id = generateID();
+        this.from = from;
+        this.to = to;
+        this.inserted = inserted;
+        this.removed = removed;
+        this.timestamp = timestamp;
+        this.metadata = metadata;
+        this.inverseOf = inverseOf;
+    }
+
+    invert (): TextChange {
+        let undoneMetadata: TextChangeMetadataMap | undefined;
+        if (this.metadata) {
+            undoneMetadata = {};
+            for (const [key, metadata] of Object.entries(this.metadata)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+                undoneMetadata[key as keyof TextChangeMetadataMap] = metadata.invert() as any;
+            }
+        }
+
+        const lenDiff = this.inserted.length - this.removed.length;
+        return new TextChange({
+            from: this.from,
+            to: this.to + lenDiff,
+            inserted: this.removed,
+            removed: this.inserted,
+            timestamp: Date.now(),
+            metadata: undoneMetadata
+        });
+    }
+
+    static merge (oldChange: TextChange, newChange: TextChange): TextChange | null {
+        // Can't merge if the metadata differs
+        if (!oldChange.metadata || !newChange.metadata) return null;
+        const oldMetadataKeys = Object.keys(oldChange.metadata);
+        const newMetadataKeys = Object.keys(newChange.metadata);
+        if (
+            oldMetadataKeys.length !== newMetadataKeys.length ||
+            oldMetadataKeys.some(key => !newMetadataKeys.includes(key))
+        ) {
+            return null;
+        }
+
+        const newFrom = oldChange.from + oldChange.inserted.length;
+        if (newFrom === newChange.from) {
+            const mergedTo = newChange.to - oldChange.inserted.length + (oldChange.to - oldChange.from);
+
+            return new TextChange({
+                from: oldChange.from,
+                to: mergedTo,
+                inserted: oldChange.inserted + newChange.inserted,
+                removed: oldChange.removed + newChange.removed,
+                // Take the timestamp from the new change so that we don't break things up into n-millisecond "chunks"
+                // when merging based on timestamp differences
+                timestamp: newChange.timestamp,
+                metadata: mergeMetadata(oldChange.metadata, newChange.metadata)
+            });
+        }
+
+        if (oldChange.from === newChange.to) {
+            return new TextChange({
+                from: newChange.from,
+                to: oldChange.to,
+                inserted: newChange.inserted + oldChange.inserted,
+                removed: newChange.removed + oldChange.removed,
+                timestamp: newChange.timestamp,
+                metadata: mergeMetadata(oldChange.metadata, newChange.metadata)
+            });
+        }
+
+        return null;
+    }
+}
 
 interface TextChangeMetadata {
     merge (newChange: ThisType<this>): ThisType<this>;
@@ -70,10 +159,6 @@ const mergeMetadata = (oldMetadataMap: TextChangeMetadataMap, newMetadataMap: Te
     return merged;
 };
 
-type InvertibleTextChange = TextChange & {
-    removed: string
-};
-
 export class TextChangeEvent extends TypedEvent<'textchange'> {
     change;
     constructor (change: TextChange) {
@@ -93,7 +178,7 @@ export class TextHistory extends TypedEventTarget<TextChangeEvent> {
         canRetry: boolean
     }> = signal({canUndo: false, canRedo: false, canRetry: false});
 
-    private changes: InvertibleTextChange[] = [];
+    private changes: TextChange[] = [];
     private undoCursor: number = 0;
 
     constructor (contents = '') {
@@ -102,52 +187,7 @@ export class TextHistory extends TypedEventTarget<TextChangeEvent> {
         this.contents = signal(contents);
     }
 
-    private tryMergeChanges (
-        oldChange: InvertibleTextChange,
-        newChange: InvertibleTextChange
-    ): InvertibleTextChange | null {
-        // Can't merge if the metadata differs
-        if (!oldChange.metadata || !newChange.metadata) return null;
-        const oldMetadataKeys = Object.keys(oldChange.metadata);
-        const newMetadataKeys = Object.keys(newChange.metadata);
-        if (
-            oldMetadataKeys.length !== newMetadataKeys.length ||
-            oldMetadataKeys.some(key => !newMetadataKeys.includes(key))
-        ) {
-            return null;
-        }
-
-        const newFrom = oldChange.from + oldChange.inserted.length;
-        if (newFrom === newChange.from) {
-            const mergedTo = newChange.to - oldChange.inserted.length + (oldChange.to - oldChange.from);
-
-            return {
-                from: oldChange.from,
-                to: mergedTo,
-                inserted: oldChange.inserted + newChange.inserted,
-                removed: oldChange.removed + newChange.removed,
-                // Take the timestamp from the new change so that we don't break things up into n-millisecond "chunks"
-                // when merging based on timestamp differences
-                timestamp: newChange.timestamp,
-                metadata: mergeMetadata(oldChange.metadata, newChange.metadata)
-            };
-        }
-
-        if (oldChange.from === newChange.to) {
-            return {
-                from: newChange.from,
-                to: oldChange.to,
-                inserted: newChange.inserted + oldChange.inserted,
-                removed: newChange.removed + oldChange.removed,
-                timestamp: newChange.timestamp,
-                metadata: mergeMetadata(oldChange.metadata, newChange.metadata)
-            };
-        }
-
-        return null;
-    }
-
-    private canMergeChanges (oldChange: InvertibleTextChange, newChange: InvertibleTextChange) {
+    private canMergeChanges (oldChange: TextChange, newChange: TextChange) {
         // Always merge changes from the same textgen, no matter how long they take to stream
         if (
             oldChange.metadata?.textgen &&
@@ -159,12 +199,12 @@ export class TextHistory extends TypedEventTarget<TextChangeEvent> {
         return newChange.timestamp - oldChange.timestamp <= MERGE_CHANGE_TIMESTAMP_THRESHOLD;
     }
 
-    private storeChange (change: InvertibleTextChange) {
+    private storeChange (change: TextChange) {
         if (this.undoCursor > 0) {
             const prevChange = this.changes[this.undoCursor - 1];
 
             const mergedChange = this.canMergeChanges(prevChange, change) ?
-                this.tryMergeChanges(prevChange, change) :
+                TextChange.merge(prevChange, change) :
                 null;
 
             if (mergedChange) {
@@ -191,30 +231,11 @@ export class TextHistory extends TypedEventTarget<TextChangeEvent> {
             oldContents.slice(change.to, oldContents.length);
     }
 
-    private unapplyChange (change: InvertibleTextChange): TextChange {
-        const oldContents = this.contents.value;
+    private unapplyChange (change: TextChange): TextChange {
+        const inverted = change.invert();
+        this.applyChange(inverted);
 
-        const lenDiff = change.inserted.length - change.removed.length;
-        this.contents.value = oldContents.slice(0, change.from) +
-            change.removed +
-            oldContents.slice(change.to + lenDiff, oldContents.length);
-
-        let undoneMetadata: TextChangeMetadataMap | undefined;
-        if (change.metadata) {
-            undoneMetadata = {};
-            for (const [key, metadata] of Object.entries(change.metadata)) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-                undoneMetadata[key as keyof TextChangeMetadataMap] = metadata.invert() as any;
-            }
-        }
-
-        return {
-            from: change.from,
-            to: change.to + lenDiff,
-            inserted: change.removed,
-            timestamp: Date.now(),
-            metadata: undoneMetadata
-        };
+        return inverted;
     }
 
     private updateUndoState () {
@@ -225,24 +246,23 @@ export class TextHistory extends TypedEventTarget<TextChangeEvent> {
         };
     }
 
-    update (change: TextChange) {
+    update (change: TextChangeDescriptor) {
         const oldContents = this.contents.value;
 
-        this.applyChange(change);
-
-        const invertibleChange = {
+        const textChange = new TextChange({
             from: change.from,
             to: change.to,
             inserted: change.inserted,
             removed: oldContents.slice(change.from, change.to),
             timestamp: change.timestamp,
             metadata: change.metadata
-        };
+        });
 
-        this.storeChange(invertibleChange);
+        this.applyChange(textChange);
+        this.storeChange(textChange);
 
         this.updateUndoState();
-        this.dispatchEvent(new TextChangeEvent(change));
+        this.dispatchEvent(new TextChangeEvent(textChange));
     }
 
     undo () {
