@@ -1,7 +1,7 @@
 import {createContext} from 'preact';
 import {useContext, useMemo} from 'preact/hooks';
 import {signal, effect, batch, Signal} from '@preact/signals';
-import {ChatHistory} from './controller/chat-history';
+import {TextHistory} from './controller/text-history';
 import type {AIBackend, Jsonable} from './backends/ai-backend';
 import KoboldCppBackend from './backends/koboldcpp';
 
@@ -13,7 +13,7 @@ export enum ChatStatus {
 export type ChatState = {
     status: Signal<ChatStatus>,
     generationProgress: Signal<number>,
-    history: ChatHistory,
+    history: TextHistory,
 };
 
 /**
@@ -49,7 +49,7 @@ export const createStore = (): AppState => {
         chat: {
             status: signal(ChatStatus.IDLE),
             generationProgress: signal(0),
-            history: new ChatHistory()
+            history: new TextHistory()
         },
         backend: signal(new KoboldCppBackend()),
         allBackendSettings: signal({})

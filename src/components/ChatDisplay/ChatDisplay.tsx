@@ -7,7 +7,7 @@ import {Tree, type SyntaxNodeRef, TreeFragment} from '@lezer/common';
 
 import {useAppState} from '../../app-state';
 import {MarkdownCache, parser} from '../../text-processing/markdown';
-import {ChatChangeEvent} from '../../controller/chat-history';
+import {TextChangeEvent} from '../../controller/text-history';
 
 const DEBUG: boolean = false;
 
@@ -229,7 +229,7 @@ const ChatDisplay = () => {
 
     useLayoutEffect(() => {
         const history = chat.history;
-        const listener = ({change}: ChatChangeEvent) => {
+        const listener = ({change}: TextChangeEvent) => {
             //console.log(change);
             let {tree, fragments} = markdownTree.value!;
 
@@ -248,10 +248,10 @@ const ChatDisplay = () => {
             });
         };
 
-        history.addEventListener('chatchange', listener);
+        history.addEventListener('textchange', listener);
 
         return () => {
-            history.removeEventListener('chatchange', listener);
+            history.removeEventListener('textchange', listener);
         };
     }, []);
 

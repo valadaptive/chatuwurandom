@@ -9,7 +9,7 @@ import {defaultKeymap} from '@codemirror/commands';
 import {markdown} from '@codemirror/lang-markdown';
 
 import {useAppState} from '../../app-state';
-import {ChatChangeEvent, CodeMirrorChangeMetadata} from '../../controller/chat-history';
+import {TextChangeEvent, CodeMirrorChangeMetadata} from '../../controller/text-history';
 import {language, highlightStyle} from '../../text-processing/markdown';
 import {syntaxHighlighting} from '@codemirror/language';
 
@@ -97,7 +97,7 @@ const ChatEditor = (): JSX.Element => {
 
     useLayoutEffect(() => {
         const history = chat.history;
-        const listener = ({change}: ChatChangeEvent) => {
+        const listener = ({change}: TextChangeEvent) => {
             if (isDispatchingChanges.current) return;
             isHandlingChanges.current = true;
 
@@ -114,10 +114,10 @@ const ChatEditor = (): JSX.Element => {
             isHandlingChanges.current = false;
         };
 
-        history.addEventListener('chatchange', listener);
+        history.addEventListener('textchange', listener);
 
         return () => {
-            history.removeEventListener('chatchange', listener);
+            history.removeEventListener('textchange', listener);
         };
     }, []);
 

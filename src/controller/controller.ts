@@ -3,7 +3,7 @@ import {batch} from '@preact/signals';
 import {ChatStatus, AppState} from '../app-state';
 
 import {generateID} from '../util/id';
-import {TextGenerationChangeMetadata} from './chat-history';
+import {TextGenerationChangeMetadata} from './text-history';
 
 class Controller {
     private appState;

@@ -2,20 +2,20 @@ import {signal, Signal} from '@preact/signals';
 import {TypedEvent, TypedEventTarget} from '../util/typed-events';
 import {EditorSelection} from '@codemirror/state';
 
-export type ChatChange = {
+export type TextChange = {
     from: number,
     to: number,
     inserted: string,
     timestamp: number,
-    metadata?: ChatChangeMetadataMap
+    metadata?: TextChangeMetadataMap
 };
 
-interface ChatChangeMetadata {
+interface TextChangeMetadata {
     merge (newChange: ThisType<this>): ThisType<this>;
     invert (): ThisType<this>;
 }
 
-export class CodeMirrorChangeMetadata implements ChatChangeMetadata {
+export class CodeMirrorChangeMetadata implements TextChangeMetadata {
     oldSelection;
     newSelection;
 
@@ -33,7 +33,7 @@ export class CodeMirrorChangeMetadata implements ChatChangeMetadata {
     }
 }
 
-export class TextGenerationChangeMetadata implements ChatChangeMetadata {
+export class TextGenerationChangeMetadata implements TextChangeMetadata {
     generationId;
 
     constructor (generationId: string) {
@@ -52,32 +52,32 @@ export class TextGenerationChangeMetadata implements ChatChangeMetadata {
     }
 }
 
-type ChatChangeMetadataMap = {
+type TextChangeMetadataMap = {
     codemirror?: CodeMirrorChangeMetadata,
     textgen?: TextGenerationChangeMetadata
 };
 
-const mergeMetadata = (oldMetadataMap: ChatChangeMetadataMap, newMetadataMap: ChatChangeMetadataMap) => {
-    const merged: ChatChangeMetadataMap = {};
+const mergeMetadata = (oldMetadataMap: TextChangeMetadataMap, newMetadataMap: TextChangeMetadataMap) => {
+    const merged: TextChangeMetadataMap = {};
 
     for (const [key, oldMetadata] of Object.entries(oldMetadataMap)) {
-        const newMetadata = newMetadataMap[key as keyof ChatChangeMetadataMap] as typeof oldMetadata;
+        const newMetadata = newMetadataMap[key as keyof TextChangeMetadataMap] as typeof oldMetadata;
         // eslint-disable-next-line max-len
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-        merged[key as keyof ChatChangeMetadataMap] = oldMetadata.merge(newMetadata as any) as any;
+        merged[key as keyof TextChangeMetadataMap] = oldMetadata.merge(newMetadata as any) as any;
     }
 
     return merged;
 };
 
-type InvertibleChatChange = ChatChange & {
+type InvertibleTextChange = TextChange & {
     removed: string
 };
 
-export class ChatChangeEvent extends TypedEvent<'chatchange'> {
+export class TextChangeEvent extends TypedEvent<'textchange'> {
     change;
-    constructor (change: ChatChange) {
-        super('chatchange');
+    constructor (change: TextChange) {
+        super('textchange');
         this.change = change;
     }
 }
@@ -85,7 +85,7 @@ export class ChatChangeEvent extends TypedEvent<'chatchange'> {
 // Merge changes if they occurred within 2 seconds of each other
 const MERGE_CHANGE_TIMESTAMP_THRESHOLD = 2000;
 
-export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
+export class TextHistory extends TypedEventTarget<TextChangeEvent> {
     contents: Signal<string>;
     undoState: Signal<{
         canUndo: boolean,
@@ -93,7 +93,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         canRetry: boolean
     }> = signal({canUndo: false, canRedo: false, canRetry: false});
 
-    private changes: InvertibleChatChange[] = [];
+    private changes: InvertibleTextChange[] = [];
     private undoCursor: number = 0;
 
     constructor (contents = '') {
@@ -103,9 +103,9 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
     }
 
     private tryMergeChanges (
-        oldChange: InvertibleChatChange,
-        newChange: InvertibleChatChange
-    ): InvertibleChatChange | null {
+        oldChange: InvertibleTextChange,
+        newChange: InvertibleTextChange
+    ): InvertibleTextChange | null {
         // Can't merge if the metadata differs
         if (!oldChange.metadata || !newChange.metadata) return null;
         const oldMetadataKeys = Object.keys(oldChange.metadata);
@@ -147,7 +147,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         return null;
     }
 
-    private canMergeChanges (oldChange: InvertibleChatChange, newChange: InvertibleChatChange) {
+    private canMergeChanges (oldChange: InvertibleTextChange, newChange: InvertibleTextChange) {
         // Always merge changes from the same textgen, no matter how long they take to stream
         if (
             oldChange.metadata?.textgen &&
@@ -159,7 +159,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         return newChange.timestamp - oldChange.timestamp <= MERGE_CHANGE_TIMESTAMP_THRESHOLD;
     }
 
-    private storeChange (change: InvertibleChatChange) {
+    private storeChange (change: InvertibleTextChange) {
         if (this.undoCursor > 0) {
             const prevChange = this.changes[this.undoCursor - 1];
 
@@ -183,7 +183,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         }
     }
 
-    private applyChange (change: ChatChange) {
+    private applyChange (change: TextChange) {
         const oldContents = this.contents.value;
 
         this.contents.value = oldContents.slice(0, change.from) +
@@ -191,7 +191,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
             oldContents.slice(change.to, oldContents.length);
     }
 
-    private unapplyChange (change: InvertibleChatChange): ChatChange {
+    private unapplyChange (change: InvertibleTextChange): TextChange {
         const oldContents = this.contents.value;
 
         const lenDiff = change.inserted.length - change.removed.length;
@@ -199,12 +199,12 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
             change.removed +
             oldContents.slice(change.to + lenDiff, oldContents.length);
 
-        let undoneMetadata: ChatChangeMetadataMap | undefined;
+        let undoneMetadata: TextChangeMetadataMap | undefined;
         if (change.metadata) {
             undoneMetadata = {};
             for (const [key, metadata] of Object.entries(change.metadata)) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-                undoneMetadata[key as keyof ChatChangeMetadataMap] = metadata.invert() as any;
+                undoneMetadata[key as keyof TextChangeMetadataMap] = metadata.invert() as any;
             }
         }
 
@@ -225,7 +225,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         };
     }
 
-    update (change: ChatChange) {
+    update (change: TextChange) {
         const oldContents = this.contents.value;
 
         this.applyChange(change);
@@ -242,7 +242,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         this.storeChange(invertibleChange);
 
         this.updateUndoState();
-        this.dispatchEvent(new ChatChangeEvent(change));
+        this.dispatchEvent(new TextChangeEvent(change));
     }
 
     undo () {
@@ -251,7 +251,7 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         this.undoCursor--;
 
         this.updateUndoState();
-        this.dispatchEvent(new ChatChangeEvent(unchange));
+        this.dispatchEvent(new TextChangeEvent(unchange));
     }
 
     redo () {
@@ -263,6 +263,6 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
         this.undoCursor++;
 
         this.updateUndoState();
-        this.dispatchEvent(new ChatChangeEvent(change));
+        this.dispatchEvent(new TextChangeEvent(change));
     }
 }
