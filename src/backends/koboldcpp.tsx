@@ -14,6 +14,8 @@ import {
 } from '../components/Settings/Settings';
 import Indicator, {IndicatorState} from '../components/Indicator/Indicator';
 import processPrompt from '../text-processing/process-text';
+import {Schema, jsonMatchesSchema} from '../util/validate-json';
+import {mergeInto} from '../util/merge';
 
 type ConnectionStatus = {
     status: 'disconnected' | 'connected' | 'connecting'
@@ -27,6 +29,41 @@ const enum MirostatMode {
     V1,
     V2
 }
+
+const settingsSchema = {
+    type: 'object',
+    partial: true,
+    properties: {
+        apiUrl: 'string',
+        outputLength: 'number',
+        temperature: 'number',
+        repetitionPenalty: {
+            type: 'object',
+            partial: true,
+            properties: {
+                penalty: 'number',
+                lastN: 'number'
+            }
+        },
+        topA: 'number',
+        topK: 'number',
+        topP: 'number',
+        minP: 'number',
+        tailFreeSampling: 'number',
+        typicalSampling: 'number',
+        mirostat: {
+            type: 'object',
+            partial: true,
+            properties: {
+                mode: 'number',
+                learningRate: 'number',
+                targetEntropy: 'number'
+            }
+
+        },
+        banEOS: 'boolean'
+    }
+} as const satisfies Schema;
 
 class KoboldCppBackend implements AIBackend {
     public id = 'koboldcpp';
@@ -213,32 +250,11 @@ class KoboldCppBackend implements AIBackend {
         if (typeof settingsJson !== 'object' || Array.isArray(settingsJson)) return;
         if (settingsJson?.version !== 1) return;
 
-        if (typeof settingsJson.apiUrl === 'string') this.settings.apiUrl.value = settingsJson.apiUrl;
-        if (typeof settingsJson.outputLength === 'number') this.settings.outputLength.value = settingsJson.outputLength;
-        if (typeof settingsJson.temperature === 'number') this.settings.temperature.value = settingsJson.temperature;
-        if (typeof settingsJson.repetitionPenalty === 'object' && !Array.isArray(settingsJson.repetitionPenalty)) {
-            if (typeof settingsJson.repetitionPenalty?.penalty === 'number')
-                this.settings.repetitionPenalty.penalty.value = settingsJson.repetitionPenalty.penalty;
-            if (typeof settingsJson.repetitionPenalty?.lastN === 'number')
-                this.settings.repetitionPenalty.lastN.value = settingsJson.repetitionPenalty.lastN;
+        if (!jsonMatchesSchema(settingsSchema, settingsJson)) {
+            return;
         }
-        if (typeof settingsJson.topA === 'number') this.settings.topA.value = settingsJson.topA;
-        if (typeof settingsJson.topK === 'number') this.settings.topK.value = settingsJson.topK;
-        if (typeof settingsJson.topP === 'number') this.settings.topP.value = settingsJson.topP;
-        if (typeof settingsJson.minP === 'number') this.settings.minP.value = settingsJson.minP;
-        if (typeof settingsJson.tailFreeSampling === 'number')
-            this.settings.tailFreeSampling.value = settingsJson.tailFreeSampling;
-        if (typeof settingsJson.typicalSampling === 'number')
-            this.settings.typicalSampling.value = settingsJson.typicalSampling;
-        if (typeof settingsJson.mirostat === 'object' && !Array.isArray(settingsJson.mirostat)) {
-            if (typeof settingsJson.mirostat?.mode === 'number')
-                this.settings.mirostat.mode.value = settingsJson.mirostat.mode as MirostatMode;
-            if (typeof settingsJson.mirostat?.learningRate === 'number')
-                this.settings.mirostat.learningRate.value = settingsJson.mirostat.learningRate;
-            if (typeof settingsJson.mirostat?.targetEntropy === 'number')
-                this.settings.mirostat.targetEntropy.value = settingsJson.mirostat.targetEntropy;
-        }
-        if (typeof settingsJson.banEOS === 'boolean') this.settings.banEOS.value = settingsJson.banEOS;
+
+        mergeInto(this.settings, settingsJson);
     }
 
     SettingsPanel (): JSX.Element {
