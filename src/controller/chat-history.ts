@@ -257,13 +257,8 @@ export class ChatHistory extends TypedEventTarget<ChatChangeEvent> {
     redo () {
         if (this.undoCursor === this.changes.length) return;
         const change = this.changes[this.undoCursor];
-        const oldContents = this.contents.value;
 
         this.applyChange(change);
-
-        this.contents.value = oldContents.slice(0, change.from) +
-            change.inserted +
-            oldContents.slice(change.to, oldContents.length);
 
         this.undoCursor++;
 
