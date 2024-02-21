@@ -4,8 +4,10 @@
     - Chat display (done)
     - Cancel in-progress generation (done)
     - Settings panel (done)
-- Save and load sessions
-    - Session folder w/ autosave using FileSystem API
+- Save and load sessions (done)
+    - Session folder w/ autosave using FileSystem API (done)
+    - Make the files smaller!
+    - Signalified virtual FS to paper over issues with the FS API
 - History editing (done)
 - Token streaming (done)
 - Markdown / code / plaintext view options (done)

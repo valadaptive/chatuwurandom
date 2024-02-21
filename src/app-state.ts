@@ -1,9 +1,14 @@
 import {createContext} from 'preact';
 import {useContext, useMemo} from 'preact/hooks';
 import {signal, effect, batch, Signal} from '@preact/signals';
-import {TextHistory} from './controller/text-history';
-import type {AIBackend, Jsonable} from './backends/ai-backend';
+import type {AIBackend} from './backends/ai-backend';
 import KoboldCppBackend from './backends/koboldcpp';
+
+import {TextHistory} from './controller/text-history';
+import SaveFile from './controller/save-file';
+import Directory from './controller/signalize-fs';
+
+import type {Jsonable} from './util/jsonable';
 
 export enum ChatStatus {
     IDLE,
@@ -13,7 +18,25 @@ export enum ChatStatus {
 export type ChatState = {
     status: Signal<ChatStatus>,
     generationProgress: Signal<number>,
-    history: TextHistory,
+    history: Signal<TextHistory>,
+};
+
+export enum StorageDirStatus {
+    NOT_SET,
+    LOADING,
+    SET,
+    FAILED
+}
+
+export type StorageDirState = {
+    status: StorageDirStatus.NOT_SET | StorageDirStatus.LOADING
+} | {
+    status: StorageDirStatus.SET,
+    directory: Directory,
+    showPlaceholderSaveFile: Signal<boolean>,
+} | {
+    status: StorageDirStatus.FAILED,
+    message: string
 };
 
 /**
@@ -23,6 +46,8 @@ export type AppState = {
     chat: ChatState,
     chatBoxText: Signal<string>,
     backend: Signal<AIBackend>,
+    saveFile: Signal<SaveFile | null>,
+    storageDir: Signal<StorageDirState>,
     allBackendSettings: Signal<Partial<Record<string, Jsonable>>>
 };
 
@@ -49,9 +74,11 @@ export const createStore = (): AppState => {
         chat: {
             status: signal(ChatStatus.IDLE),
             generationProgress: signal(0),
-            history: new TextHistory()
+            history: signal(new TextHistory())
         },
         backend: signal(new KoboldCppBackend()),
+        saveFile: signal(null),
+        storageDir: signal({status: StorageDirStatus.NOT_SET}),
         allBackendSettings: signal({})
     };
 

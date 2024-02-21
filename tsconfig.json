@@ -15,10 +15,13 @@
 		"target": "es2020",
 		"noErrorTruncation": true,
 		"outDir": "build",
-		"lib": ["es2021"]
+		"lib": ["es2021", "WebWorker", "DOM"]
 	},
 	"include": [
 		"src/**/*",
 		"test/**/*.test.ts"
+	],
+	"types": [
+		"@types/wicg-file-system-access"
 	]
 }

@@ -3,7 +3,7 @@ import {Signal, signal} from '@preact/signals';
 import EventSourceStream from '@server-sent-stream/web';
 import {useCallback} from 'preact/hooks';
 
-import {AIBackend, Jsonable} from './ai-backend';
+import {AIBackend} from './ai-backend';
 import {
     Setting,
     SettingRow,
@@ -16,6 +16,7 @@ import Indicator, {IndicatorState} from '../components/Indicator/Indicator';
 import processPrompt from '../text-processing/process-text';
 import {Schema, jsonMatchesSchema} from '../util/validate-json';
 import {mergeInto} from '../util/merge';
+import type {Jsonable} from '../util/jsonable';
 
 type ConnectionStatus = {
     status: 'disconnected' | 'connected' | 'connecting'

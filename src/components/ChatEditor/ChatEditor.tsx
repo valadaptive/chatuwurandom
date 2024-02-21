@@ -9,7 +9,7 @@ import {defaultKeymap} from '@codemirror/commands';
 import {markdown} from '@codemirror/lang-markdown';
 
 import {useAppState} from '../../app-state';
-import {TextChangeEvent, CodeMirrorChangeMetadata} from '../../controller/text-history';
+import {TextChangeEvent, CodeMirrorChangeMetadata, TextHistory} from '../../controller/text-history';
 import {language, highlightStyle} from '../../text-processing/markdown';
 import {syntaxHighlighting} from '@codemirror/language';
 
@@ -30,53 +30,57 @@ const theme = EditorView.theme({
     }
 }, {dark: true});
 
+const createEditorState = (history: TextHistory) => {
+    const undoCommand = (): boolean => {
+        history.undo();
+        return true;
+    };
+
+    const redoCommand = (): boolean => {
+        history.redo();
+        return true;
+    };
+
+    const historyBindings: readonly KeyBinding[] = [
+        {key: 'Mod-z', run: undoCommand, preventDefault: true},
+        {key: 'Mod-y', run: redoCommand, preventDefault: true},
+        {key: 'Ctrl-Shift-z', run: redoCommand, preventDefault: true}
+    ];
+
+    const editorState = EditorState.create({
+        doc: history.contents.value,
+        extensions: [
+            keymap.of([...defaultKeymap, ...historyBindings]),
+            EditorState.lineSeparator.of('\n'),
+            lineNumbers(),
+            syntaxHighlighting(highlightStyle),
+            markdown({base: language}),
+            EditorView.lineWrapping,
+            theme
+        ]
+    });
+
+    return editorState;
+};
+
 const ChatEditor = (): JSX.Element => {
     const {chat} = useAppState();
     const editorRef = useRef<HTMLDivElement>(null);
-    const codeMirrorRef = useRef<{editorView: EditorView, editorState: EditorState}>();
+    const codeMirrorRef = useRef<{editorView: EditorView}>();
     // We don't want to handle ChatChange events when we're the ones dispatching them--that would be an infinite loop
     const isDispatchingChanges = useRef(false);
     // Also don't dispatch ChatChange events when we're handling them
     const isHandlingChanges = useRef(false);
 
     useLayoutEffect(() => {
-        const undoCommand = (): boolean => {
-            chat.history.undo();
-            return true;
-        };
-
-        const redoCommand = (): boolean => {
-            chat.history.redo();
-            return true;
-        };
-
-        const historyBindings: readonly KeyBinding[] = [
-            {key: 'Mod-z', run: undoCommand, preventDefault: true},
-            {key: 'Mod-y', run: redoCommand, preventDefault: true},
-            {key: 'Ctrl-Shift-z', run: redoCommand, preventDefault: true}
-        ];
-
-        const editorState = EditorState.create({
-            doc: chat.history.contents.value,
-            extensions: [
-                keymap.of([...defaultKeymap, ...historyBindings]),
-                EditorState.lineSeparator.of('\n'),
-                lineNumbers(),
-                syntaxHighlighting(highlightStyle),
-                markdown({base: language}),
-                EditorView.lineWrapping,
-                theme
-            ]
-        });
         const editorView = new EditorView({
-            state: editorState,
             parent: editorRef.current ?? undefined,
             dispatch (tr, view) {
                 isDispatchingChanges.current = true;
 
                 if (!isHandlingChanges.current) {
                     tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-                        chat.history.update({
+                        chat.history.value.update({
                             from: fromA,
                             to: toA,
                             inserted: inserted.toString(),
@@ -92,11 +96,15 @@ const ChatEditor = (): JSX.Element => {
             }
         });
 
-        codeMirrorRef.current = {editorView, editorState};
+        codeMirrorRef.current = {editorView};
     }, []);
 
     useLayoutEffect(() => {
-        const history = chat.history;
+        codeMirrorRef.current!.editorView.setState(createEditorState(chat.history.value));
+    }, [chat.history.value]);
+
+    useLayoutEffect(() => {
+        const history = chat.history.value;
         const listener = ({change}: TextChangeEvent) => {
             if (isDispatchingChanges.current) return;
             isHandlingChanges.current = true;
@@ -119,7 +127,7 @@ const ChatEditor = (): JSX.Element => {
         return () => {
             history.removeEventListener('textchange', listener);
         };
-    }, []);
+    }, [chat.history.value]);
 
     return (
         <div className={style.editorWrapper} ref={editorRef} />

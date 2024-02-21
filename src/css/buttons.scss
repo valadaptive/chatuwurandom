@@ -21,7 +21,7 @@ button {
     @include theme.bg-fade;
     transition: background-color 0.25s ease;
 
-    background-color: theme.$brand;
+    background-color: theme.$primary;
     border: none;
     border-radius: theme.$radius;
     color: white;
@@ -30,7 +30,7 @@ button {
     font-weight: 600;
     padding: 0.675rem 0.75rem;
 
-    @include button-color(theme.$brand, theme.$brand-hover, theme.$brand-active, theme.$brand-muted);
+    @include button-color(theme.$primary, theme.$primary-hover, theme.$primary-active, theme.$primary-muted);
 
     &:disabled {
         cursor: not-allowed;

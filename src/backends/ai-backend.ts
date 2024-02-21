@@ -1,6 +1,6 @@
 import type {JSX} from 'preact';
 
-export type Jsonable = string | number | boolean | null | undefined | {[x: string]: Jsonable} | Jsonable[];
+import type {Jsonable} from '../util/jsonable';
 
 export interface AIBackend {
     id: string;

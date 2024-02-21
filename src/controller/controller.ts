@@ -28,7 +28,7 @@ class Controller {
 
         // Add the message content to the chat history and remove it from the chat textbox
         batch(() => {
-            const history = this.appState.chat.history;
+            const history = this.appState.chat.history.value;
             history.update({
                 from: history.contents.value.length,
                 to: history.contents.value.length,
@@ -40,7 +40,7 @@ class Controller {
             this.appState.chat.generationProgress.value = 0;
         });
 
-        const history = this.appState.chat.history;
+        const history = this.appState.chat.history.value;
         const historyContents = history.contents.value;
 
         const generationId = generateID();

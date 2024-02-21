@@ -1,10 +1,26 @@
-@use '../../theme.scss' as col;
+@use '../../theme.scss' as theme;
 
 .icon {
     width: 24px;
     height: 24px;
-    background-color: col.$icon-detail;
+    background-color: currentColor;
     display: inline-block;
+
+    &.motif-primary {
+        background-color: theme.$primary-lighter;
+    }
+
+    &.motif-success {
+        background-color: theme.$green;
+    }
+
+    &.motif-warning {
+        background-color: theme.$yellow;
+    }
+
+    &.motif-error {
+        background-color: theme.$red;
+    }
 }
 
 @mixin button-color($hover, $active, $disabled) {
@@ -23,9 +39,27 @@
 
 .button {
     cursor: pointer;
-    background-color: col.$interactive-normal;
+    background-color: theme.$interactive-normal;
 
-    @include button-color(col.$interactive-hover, col.$interactive-active, col.$interactive-muted);
+    @include button-color(theme.$interactive-hover, theme.$interactive-active, theme.$interactive-muted);
+
+    &.motif-monochrome {
+        background-color: currentColor;
+        @include button-color(currentColor, currentColor, currentColor);
+        transition: opacity 0.175s ease;
+
+        &:hover {
+            opacity: 0.875;
+        }
+
+        &:active {
+            opacity: 0.75;
+        }
+
+        &.disabled {
+            opacity: 0.5;
+        }
+    }
 
     &.disabled {
         cursor: not-allowed;
@@ -54,8 +88,17 @@
 @include def-icons(
     arrow-down
     cancel
+    check
+    close
+    edit
+    error
+    export
+    file
+    folder
+    plus
     undo
     redo
     retry
     send
+    warning
 )

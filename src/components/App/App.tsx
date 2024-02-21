@@ -19,9 +19,10 @@ const App = () => {
                     panel: <SettingsPane />,
                     title: 'Settings'
                 }
-            ]} initialTab='settings' />
+            ]} initialTab='home' />
             <ChatPane />
         </div>
+
     );
 };
 

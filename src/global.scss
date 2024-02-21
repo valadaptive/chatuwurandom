@@ -23,7 +23,7 @@ body {
 }
 
 ::selection {
-    background-color: theme.$brand;
+    background-color: theme.$primary;
     color: white;
 }
 
@@ -67,7 +67,7 @@ textarea {
 
 a {
     text-decoration: none;
-    color: theme.$brand-lighter;
+    color: theme.$primary-lighter;
 
     &:hover {
         cursor: pointer;

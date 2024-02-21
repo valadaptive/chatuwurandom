@@ -23,11 +23,11 @@
     cursor: pointer;
 
     &:hover {
-        background-color: theme.$brand-hover;
+        background-color: theme.$primary-hover;
     }
 
     &.active-tab {
-        background-color: theme.$brand;
+        background-color: theme.$primary;
     }
 }
 

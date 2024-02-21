@@ -1,8 +1,12 @@
 import style from './style.scss';
 
+import FileView from '../FileView/FileView';
+
 const HomePane = () => {
     return (
-        <div className={style.homePane}>This will be the home pane</div>
+        <div className={style.homePane}>
+            <FileView />
+        </div>
     );
 };
 

@@ -12,10 +12,8 @@ export type Schema =
     type: 'string',
     validValues?: string[]
 }
-| {type: 'number'}
-| {type: 'boolean'}
-| {type: 'null'}
-| 'string' | 'number' | 'boolean' | 'null'
+| {type: 'number' | 'boolean' | 'null' | 'undefined'}
+| 'string' | 'number' | 'boolean' | 'null' | 'undefined'
 | Schema[];
 
 type StringSchemaToObject<S extends {type: 'string', validValues?: string[]}> =
@@ -34,9 +32,10 @@ type SingleSchemaToObject<S extends Exclude<Schema, Schema[]>> =
                     S extends {type: 'number'} | 'number' ? number :
                         S extends {type: 'boolean'} | 'boolean' ? boolean :
                             S extends {type: 'null'} | 'null' ? null :
-                                never;
+                                S extends {type: 'undefined'} | 'undefined' ? undefined :
+                                    never;
 
-type SchemaToObject<S extends Schema> =
+export type SchemaToObject<S extends Schema> =
     S extends Schema[] ?
         SchemaToObject<S[number]> :
         S extends Exclude<Schema, Schema[]> ? SingleSchemaToObject<S> : never;
@@ -45,7 +44,9 @@ const jsonMatchesSingle = <S extends Exclude<Schema, Schema[]>>(
     schema: S,
     json: unknown
 ): json is SchemaToObject<S> => {
-    const schemaType = typeof schema === 'string' ? schema as 'string' | 'number' | 'boolean' | 'null' : schema.type;
+    const schemaType = typeof schema === 'string' ?
+        schema as 'string' | 'number' | 'boolean' | 'null' | 'undefined' :
+        schema.type;
     switch (schemaType) {
         case 'object': {
             if (typeof json !== 'object' || json === null || Array.isArray(json)) return false;
@@ -54,8 +55,12 @@ const jsonMatchesSingle = <S extends Exclude<Schema, Schema[]>>(
             if (typeof schema !== 'object' || !('properties' in schema)) throw new Error('unreachable');
             for (const schemaKey of Object.keys(schema.properties)) {
                 const jsonValue = (json as Record<string, unknown>)[schemaKey];
-                if (typeof jsonValue === 'undefined' && !isPartial) return false;
-                if (!jsonMatchesSchema(schema.properties[schemaKey], jsonValue)) return false;
+                // Needed to avoid infinite type instantiation
+                const uncheckedValue = jsonValue;
+                if (!jsonMatchesSchema(schema.properties[schemaKey], jsonValue)) {
+                    if (typeof uncheckedValue === 'undefined' && isPartial) continue;
+                    return false;
+                }
             }
 
             return true;
@@ -73,6 +78,7 @@ const jsonMatchesSingle = <S extends Exclude<Schema, Schema[]>>(
         case 'number': return typeof json === 'number';
         case 'boolean': return typeof json === 'boolean';
         case 'null': return json === null;
+        case 'undefined': return typeof json === 'undefined';
     }
 };
 

@@ -220,17 +220,19 @@ const ChatDisplay = () => {
     const isScrolledToBottom = useRef<boolean>(true);
 
     const markdownTree = useSignal<{tree: Tree, fragments: readonly TreeFragment[]} | null>(null);
-    if (!markdownTree.value) {
-        const tree = parser.parse(chat.history.contents.value);
-        markdownTree.value = {tree, fragments: TreeFragment.addTree(tree)};
-    }
 
     const doc = useSignal('');
 
     useLayoutEffect(() => {
-        const history = chat.history;
+        const history = chat.history.value;
+
+        const tree = parser.parse(history.contents.value);
+        batch(() => {
+            markdownTree.value = {tree, fragments: TreeFragment.addTree(tree)};
+            doc.value = history.contents.value;
+        });
+
         const listener = ({change}: TextChangeEvent) => {
-            //console.log(change);
             let {tree, fragments} = markdownTree.value!;
 
             fragments = TreeFragment.applyChanges(fragments, [{
@@ -253,10 +255,11 @@ const ChatDisplay = () => {
         return () => {
             history.removeEventListener('textchange', listener);
         };
-    }, []);
+    }, [chat.history.value]);
 
     const rendered = useComputed(() => {
-        const {tree} = markdownTree.value!;
+        if (!markdownTree.value) return null;
+        const {tree} = markdownTree.value;
         return markdownCache.mapMarkdown(tree, doc.value, renderMarkdown);
     });
 

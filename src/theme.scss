@@ -6,6 +6,7 @@
 
     --text: #edf6f8;
     --text-detail: #a2acbc;
+    --icon: rgb(125, 123, 165);
     --icon-detail: #515072;
 
     --interactive-normal: #808ea0;
@@ -14,12 +15,12 @@
     --interactive-muted: #656880;
     --divider: #373344;
 
-    --brand: #503f76;
-    --brand-hover: #3c3267;
-    --brand-active: #2b2652;
-    --brand-muted: #3f3d4d;
-    --brand-light: #71559b;
-    --brand-lighter: #916db8;
+    --primary: #503f76;
+    --primary-hover: #3c3267;
+    --primary-active: #2b2652;
+    --primary-muted: #3f3d4d;
+    --primary-light: #71559b;
+    --primary-lighter: #916db8;
 
     --red: rgb(206, 40, 53);
     --red-hover: rgb(153, 37, 72);
@@ -46,18 +47,19 @@ $base-color-secondary-dark: var(--base-color-secondary-dark);
 $base-color-tertiary: var(--base-color-tertiary);
 $text: var(--text);
 $text-detail: var(--text-detail);
+$icon: var(--icon);
 $icon-detail: var(--icon-detail);
 $interactive-normal: var(--interactive-normal);
 $interactive-hover: var(--interactive-hover);
 $interactive-active: var(--interactive-active);
 $interactive-muted: var(--interactive-muted);
 $divider: var(--divider);
-$brand: var(--brand);
-$brand-hover: var(--brand-hover);
-$brand-active: var(--brand-active);
-$brand-muted: var(--brand-muted);
-$brand-light: var(--brand-light);
-$brand-lighter: var(--brand-lighter);
+$primary: var(--primary);
+$primary-hover: var(--primary-hover);
+$primary-active: var(--primary-active);
+$primary-muted: var(--primary-muted);
+$primary-light: var(--primary-light);
+$primary-lighter: var(--primary-lighter);
 $red: var(--red);
 $red-hover: var(--red-hover);
 $red-active: var(--red-active);
