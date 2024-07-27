@@ -6,7 +6,8 @@ import {useLayoutEffect, useMemo, useRef} from 'preact/hooks';
 import {Tree, type SyntaxNodeRef, TreeFragment} from '@lezer/common';
 
 import {useAppState} from '../../app-state';
-import {MarkdownCache, parser} from '../../text-processing/markdown';
+import {parser} from '../../text-processing/markdown';
+import {SyntaxNodeCache} from '../../util/syntax-node-cache';
 import {TextChangeEvent} from '../../controller/text-history';
 
 const DEBUG: boolean = false;
@@ -215,7 +216,7 @@ const renderMarkdown = (
 
 const ChatDisplay = () => {
     const {chat} = useAppState();
-    const markdownCache = useMemo(() => new MarkdownCache(), []);
+    const markdownCache = useMemo(() => new SyntaxNodeCache(), []);
     const chatDisplayElem = useRef<HTMLDivElement>(null);
     const isScrolledToBottom = useRef<boolean>(true);
 
@@ -260,7 +261,7 @@ const ChatDisplay = () => {
     const rendered = useComputed(() => {
         if (!markdownTree.value) return null;
         const {tree} = markdownTree.value;
-        return markdownCache.mapMarkdown(tree, doc.value, renderMarkdown);
+        return markdownCache.mapNodes(tree, doc.value, renderMarkdown);
     });
 
     // Auto-scroll to include new lines if we're scrolled to the bottom
@@ -278,11 +279,11 @@ const ChatDisplay = () => {
 
     const debug = useComputed(() => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!DEBUG) return null;
-        const {tree} = markdownTree.value!;
+        if (!DEBUG || !markdownTree.value) return null;
+        const {tree} = markdownTree.value;
         return <>
             <hr />
-            <div>{markdownCache.mapMarkdown(tree, doc.value, renderDebugMarkdown)}</div>
+            <div>{markdownCache.mapNodes(tree, doc.value, renderDebugMarkdown)}</div>
         </>;
     }).value;
 

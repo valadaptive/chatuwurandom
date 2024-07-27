@@ -290,7 +290,7 @@ function devConfig () {
         devServer: {
             hot: true,
             compress: true,
-            https: false,
+            server: 'https',
             port: process.env.PORT,
             host: process.env.HOST || '0.0.0.0',
             historyApiFallback: true
