@@ -5,7 +5,7 @@ const buf = new ArrayBuffer(15);
 const bufView = new DataView(buf, 0, 6);
 const lowBits = new Uint8Array(buf, 6);
 
-/** Generate a 120-bit random ID. The top 48 bits are a timestamp, and the remaining 76 are a random value. */
+/** Generate a 120-bit random ID. The top 48 bits are a timestamp, and the remaining 72 are a random value. */
 export const generateID = (): string => {
     crypto.getRandomValues(lowBits);
 

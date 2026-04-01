@@ -1,8 +1,11 @@
 import {SyntaxNodeRef, Tree, TreeCursor} from '@lezer/common';
 
+export type SyntaxNodeTransform<T> = (
+    node: SyntaxNodeRef | string, children: T[] | null, doc: string, depth: number) => T;
+
 export class SyntaxNodeCache {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    private mapMarkdownCache = new WeakMap<(...args: any[]) => unknown, WeakMap<Tree, unknown>>();
+    private treeCache = new WeakMap<(...args: any[]) => unknown, WeakMap<Tree, unknown>>();
 
     constructor () {
 
@@ -11,12 +14,11 @@ export class SyntaxNodeCache {
     mapNodes<T> (
         tree: Tree,
         doc: string,
-        fn: (node: SyntaxNodeRef | string, children: T[] | null, doc: string, depth: number
-        ) => T) {
-        let cacheMaybe = this.mapMarkdownCache.get(fn) as WeakMap<Tree, T> | undefined;
+        fn: SyntaxNodeTransform<T>) {
+        let cacheMaybe = this.treeCache.get(fn) as WeakMap<Tree, T> | undefined;
         if (!cacheMaybe) {
             cacheMaybe = new WeakMap();
-            this.mapMarkdownCache.set(fn, cacheMaybe);
+            this.treeCache.set(fn, cacheMaybe);
         }
         const cache = cacheMaybe;
 

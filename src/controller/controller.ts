@@ -55,7 +55,11 @@ class Controller {
 
         try {
             const backend = this.appState.backend.value;
-            const stream = await backend.generate(historyContents, this.abortController.signal);
+            const stream = await backend.generate(
+                historyContents,
+                {grammar: String(this.appState.gbnfGrammar.value)},
+                this.abortController.signal
+            );
             const reader = stream.getReader();
 
             for (;;) {

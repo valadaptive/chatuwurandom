@@ -16,16 +16,16 @@ export const Dropdown = <T extends string | number>({value, options, className}:
 }): JSX.Element => {
     const handleChange = useCallback((event: Event) => {
         const select = event.target as HTMLSelectElement;
-        if (select.selectedIndex > 0) {
+        if (select.selectedIndex !== -1) {
             value.value = options[select.selectedIndex].id;
         }
     }, [value, options]);
 
     return (
         <div className={classNames(style.selectWrapper, className)}>
-            <select className={style.select}>
+            <select className={style.select} onChange={handleChange}>
                 {options.map(({id, name}) => (
-                    <option value={id} key={id} selected={id === value.value} onChange={handleChange}>{name}</option>
+                    <option value={id} key={id} selected={id === value.value}>{name}</option>
                 ))}
             </select>
         </div>

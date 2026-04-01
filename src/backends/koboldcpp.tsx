@@ -17,6 +17,7 @@ import processPrompt from '../text-processing/process-text';
 import {Schema, jsonMatchesSchema} from '../util/validate-json';
 import {mergeInto} from '../util/merge';
 import type {Jsonable} from '../util/jsonable';
+import {GenerationInput} from '../api';
 
 type ConnectionStatus = {
     status: 'disconnected' | 'connected' | 'connecting'
@@ -94,7 +95,7 @@ class KoboldCppBackend implements AIBackend {
             learningRate: Signal<number>,
             targetEntropy: Signal<number>
         },
-        banEOS: Signal<boolean>
+        banEOS: Signal<boolean>,
     } = {
             apiUrl: signal(''),
             outputLength: signal(200),
@@ -161,7 +162,11 @@ class KoboldCppBackend implements AIBackend {
         }
     }
 
-    async generate (prompt: string, signal?: AbortSignal): Promise<ReadableStream<{token: string, progress: number}>> {
+    async generate (
+        prompt: string,
+        settings: {grammar: string},
+        signal?: AbortSignal
+    ): Promise<ReadableStream<{token: string, progress: number}>> {
         if (!this.info.value) throw new Error('Not connected');
 
         prompt = processPrompt(prompt, {maxContextSize: this.info.value.maxContextLength});
@@ -169,7 +174,7 @@ class KoboldCppBackend implements AIBackend {
         const maxLength = this.settings.outputLength.value;
 
         // TODO: max_content_length, sampler_order, sampler_seed, stop_sequence, grammar, grammar_retain_state, memory
-        const params = {
+        const params: GenerationInput = {
             prompt,
             max_length: maxLength,
             rep_pen: this.settings.repetitionPenalty.penalty.value,
@@ -186,6 +191,10 @@ class KoboldCppBackend implements AIBackend {
             mirostat_tau: this.settings.mirostat.targetEntropy.value,
             mirostat_eta: this.settings.mirostat.learningRate.value
         };
+
+        if (settings.grammar) {
+            params.grammar = settings.grammar;
+        }
 
         const response = this.fetchAPI('/extra/generate/stream', {
             method: 'POST',
@@ -304,7 +313,7 @@ class KoboldCppBackend implements AIBackend {
                     <Setting name='Temperature' description='The "randomness" of the generated text.'>
                         <RangeSetting
                             min={0}
-                            max={1}
+                            max={2}
                             step={0.01}
                             value={this.settings.temperature}
                         />

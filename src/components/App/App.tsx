@@ -4,6 +4,7 @@ import HomePane from '../HomePane/HomePane';
 import ChatPane from '../ChatPane/ChatPane';
 import SettingsPane from '../SettingsPane/SettingsPane';
 import TabbedPanel from '../TabbedPanel/TabbedPanel';
+import GrammarPane from '../GrammarPane/GrammarPane';
 
 const App = () => {
     return (
@@ -21,6 +22,7 @@ const App = () => {
                 }
             ]} initialTab='home' />
             <ChatPane />
+            <GrammarPane />
         </div>
 
     );

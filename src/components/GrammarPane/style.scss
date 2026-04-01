@@ -1,0 +1,11 @@
+@use '../../theme.scss';
+
+.grammar-pane {
+    background-color: theme.$base-color-secondary;
+
+    width: 24rem;
+    flex: 0 0 auto;
+    overflow: auto;
+    padding: 1rem;
+    box-sizing: border-box;
+}

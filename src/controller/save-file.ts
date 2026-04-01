@@ -207,13 +207,13 @@ class SaveFile {
         history.addEventListener('redo', this.redoListener);
 
         // Limit the actual sending of data across a worker boundary and writing a file to occur every 2 seconds.
-        this.performSave = throttle(this.performSaveNow.bind(this), 2000);
+        this.performSave = throttle(this.commit.bind(this), 2000);
     }
 
     /**
      * Save all data to disk now, regardless of how long it's been since the last save.
      */
-    private async performSaveNow () {
+    private async commit () {
         const writeCursor = this.writeCursor;
         const bufferCursor = this.bufferCursor;
         if (bufferCursor === 0) return;
@@ -232,7 +232,7 @@ class SaveFile {
     async close () {
         this.performSave.cancel();
         // Save all changes before closing
-        await this.performSaveNow();
+        await this.commit();
         await this.worker.close();
         this.history.removeEventListener('logchange', this.logChangeListener);
         this.history.removeEventListener('undo', this.undoListener);

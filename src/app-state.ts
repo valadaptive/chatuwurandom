@@ -1,6 +1,6 @@
 import {createContext} from 'preact';
 import {useContext, useMemo} from 'preact/hooks';
-import {signal, effect, batch, Signal} from '@preact/signals';
+import {signal, effect, batch, Signal, ReadonlySignal} from '@preact/signals';
 import type {AIBackend} from './backends/ai-backend';
 import KoboldCppBackend from './backends/koboldcpp';
 
@@ -9,6 +9,9 @@ import SaveFile from './controller/save-file';
 import Directory from './controller/signalize-fs';
 
 import type {Jsonable} from './util/jsonable';
+import {incrementalizeCached} from './controller/history-to-tree';
+import {parser} from '@lezer/lezer';
+import lezerToGBNF from './text-processing/gbnf';
 
 export enum ChatStatus {
     IDLE,
@@ -44,6 +47,8 @@ export type StorageDirState = {
  */
 export type AppState = {
     chat: ChatState,
+    grammar: Signal<TextHistory>,
+    gbnfGrammar: ReadonlySignal<unknown>,
     chatBoxText: Signal<string>,
     backend: Signal<AIBackend>,
     saveFile: Signal<SaveFile | null>,
@@ -69,6 +74,7 @@ export const useAction = <T extends unknown[], V>(
 };
 
 export const createStore = (): AppState => {
+    const grammar = signal(new TextHistory());
     const store: AppState = {
         chatBoxText: signal(''),
         chat: {
@@ -76,6 +82,8 @@ export const createStore = (): AppState => {
             generationProgress: signal(0),
             history: signal(new TextHistory())
         },
+        grammar,
+        gbnfGrammar: incrementalizeCached(grammar, parser, lezerToGBNF),
         backend: signal(new KoboldCppBackend()),
         saveFile: signal(null),
         storageDir: signal({status: StorageDirStatus.NOT_SET}),
