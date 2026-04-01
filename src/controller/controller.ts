@@ -1,100 +1,183 @@
 import {batch} from '@preact/signals';
+import {TreeFragment} from '@lezer/common';
 
-import {ChatStatus, AppState} from '../app-state';
-
+import {ChatStatus, AppState, StreamState} from '../app-state';
+import {parser} from '../text-processing/markdown';
 import {generateID} from '../util/id';
-import {TextGenerationChangeMetadata} from './text-history';
+import type {Message, Attachment} from './message';
+import {UwurandomState, DestBuffer} from 'uwurandom';
+
+const BUFFER_SIZE = 64;
+const CHARS_PER_FRAME = 20;
+const MIN_LENGTH = 150;
+const MAX_LENGTH = 6000;
+/** Start looking for a double newline to break at once we exceed this fraction of the target. */
+const SOFT_LIMIT = 1.0;
+/** Accept a single newline once we exceed this fraction of the target. */
+const HARD_LIMIT = 1.5;
+/** Force-stop at this fraction of the target regardless. */
+const FORCE_LIMIT = 1.75;
 
 class Controller {
     private appState;
-    private abortController: AbortController | null = null;
+    private cancelled = false;
 
     constructor (appState: AppState) {
         this.appState = appState;
     }
 
     cancelGeneration () {
-        if (this.appState.chat.status.value !== ChatStatus.GENERATING) return;
-        if (this.abortController) {
-            this.abortController.abort('Generation cancelled');
-            this.abortController = null;
-        }
+        const status = this.appState.chat.status.value;
+        if (status !== ChatStatus.GENERATING && status !== ChatStatus.THINKING) return;
+        this.cancelled = true;
     }
 
-    async sendMessage (content: string) {
+    retry () {
+        const {chat} = this.appState;
+        if (chat.status.value !== ChatStatus.IDLE) return;
+
+        const messages = chat.messages.value;
+        if (messages.length === 0) return;
+
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage.role !== 'assistant') return;
+
+        chat.messages.value = messages.slice(0, -1);
+        void this.generate();
+    }
+
+    async sendMessage (content: string, attachments?: Attachment[]) {
         if (this.appState.chat.status.value !== ChatStatus.IDLE) {
             throw new Error('Tried to send a message while the last one was still generating');
         }
 
-        // Add the message content to the chat history and remove it from the chat textbox
+        const userMessage: Message = {
+            id: generateID(),
+            role: 'user',
+            content,
+            attachments: attachments?.length ? attachments : undefined
+        };
+
         batch(() => {
-            const history = this.appState.chat.history.value;
-            history.update({
-                from: history.contents.value.length,
-                to: history.contents.value.length,
-                inserted: content,
-                timestamp: Date.now()
-            });
+            this.appState.chat.messages.value = [...this.appState.chat.messages.value, userMessage];
             this.appState.chatBoxText.value = '';
-            this.appState.chat.status.value = ChatStatus.GENERATING;
-            this.appState.chat.generationProgress.value = 0;
         });
 
-        const history = this.appState.chat.history.value;
-        const historyContents = history.contents.value;
+        await this.generate();
+    }
 
-        const generationId = generateID();
+    private async generate () {
+        const {chat} = this.appState;
 
-        this.abortController = new AbortController();
-        // Cancel generation on the backend before reloading
-        const beforeUnloadListener = (event: BeforeUnloadEvent) => {
-            this.cancelGeneration();
-            event.preventDefault();
-        };
-        window.addEventListener('beforeunload', beforeUnloadListener);
+        this.cancelled = false;
+        chat.status.value = ChatStatus.THINKING;
 
-        try {
-            const backend = this.appState.backend.value;
-            const stream = await backend.generate(
-                historyContents,
-                {grammar: String(this.appState.gbnfGrammar.value)},
-                this.abortController.signal
-            );
-            const reader = stream.getReader();
+        // Pretend to think for a bit
+        const thinkTime = 1500 + (Math.random() * 4500);
+        await new Promise<void>(resolve => setTimeout(resolve, thinkTime));
 
-            for (;;) {
-                const {value, done} = await reader.read();
-                if (done) break;
-
-                let {token, progress} = value;
-                // I'm not sure if a CR will ever be generated, but it could desync character indices between
-                // CodeMirror, which treats all newlines as one character, and our ChatHistory class, which
-                // treats \r\n as two characters.
-                token = token.replace(/\r/g, '');
-
-                batch(() => {
-                    if (token.length > 0) history.update({
-                        from: history.contents.value.length,
-                        to: history.contents.value.length,
-                        inserted: token,
-                        timestamp: Date.now(),
-                        metadata: {
-                            textgen: new TextGenerationChangeMetadata(generationId)
-                        }
-                    });
-
-                    this.appState.chat.generationProgress.value = progress;
-                });
-            }
-        } catch (err) {
-            // TODO: display errors in the UI
-            // eslint-disable-next-line no-console
-            console.error(err);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (this.cancelled) {
+            chat.status.value = ChatStatus.IDLE;
+            return;
         }
 
-        this.appState.chat.status.value = ChatStatus.IDLE;
-        this.abortController = null;
-        window.removeEventListener('beforeunload', beforeUnloadListener);
+        chat.status.value = ChatStatus.GENERATING;
+
+        const uwuState = new UwurandomState();
+        const destBuffer = new DestBuffer(BUFFER_SIZE);
+
+        let currentContent = '';
+        const initialTree = parser.parse('');
+        let streamState: StreamState = {
+            content: '',
+            tree: initialTree,
+            fragments: TreeFragment.addTree(initialTree)
+        };
+        chat.streamState.value = streamState;
+
+        let dripBuffer = '';
+        let dripCursor = 0;
+        let totalCharsEmitted = 0;
+
+        const targetLength = MIN_LENGTH + (Math.random() * (MAX_LENGTH - MIN_LENGTH));
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            while (!this.cancelled) {
+                if (dripCursor >= dripBuffer.length) {
+                    uwuState.generate(destBuffer);
+                    dripBuffer = destBuffer.asText();
+                    dripCursor = 0;
+                }
+
+                const charsThisFrame = Math.min(
+                    CHARS_PER_FRAME,
+                    dripBuffer.length - dripCursor
+                );
+                let newChars = dripBuffer.slice(dripCursor, dripCursor + charsThisFrame);
+                dripCursor += charsThisFrame;
+
+                // Once past the soft limit, look for a good place to stop
+                let done = false;
+                const projected = totalCharsEmitted + newChars.length;
+                if (projected >= targetLength * SOFT_LIMIT) {
+                    const doubleNewline = newChars.indexOf('\n\n');
+                    if (doubleNewline !== -1) {
+                        newChars = newChars.slice(0, doubleNewline);
+                        done = true;
+                    } else if (projected >= targetLength * HARD_LIMIT) {
+                        const singleNewline = newChars.indexOf('\n');
+                        if (singleNewline !== -1) {
+                            newChars = newChars.slice(0, singleNewline);
+                            done = true;
+                        }
+                    }
+
+                    if (!done && projected >= targetLength * FORCE_LIMIT) {
+                        done = true;
+                    }
+                }
+
+                totalCharsEmitted += newChars.length;
+                const oldLen = currentContent.length;
+                currentContent += newChars;
+
+                let {fragments} = streamState;
+                fragments = TreeFragment.applyChanges(fragments, [{
+                    fromA: oldLen,
+                    toA: oldLen,
+                    fromB: oldLen,
+                    toB: currentContent.length
+                }]);
+                const tree = parser.parse(currentContent, fragments);
+                fragments = TreeFragment.addTree(tree, fragments);
+
+                streamState = {content: currentContent, tree, fragments};
+                chat.streamState.value = streamState;
+
+                if (done) break;
+
+                await new Promise<void>(resolve => setTimeout(resolve, 25));
+            }
+        } finally {
+            destBuffer.destroy();
+            uwuState.destroy();
+
+            const assistantMessage: Message = {
+                id: generateID(),
+                role: 'assistant',
+                content: currentContent
+            };
+
+            batch(() => {
+                chat.messages.value = [...chat.messages.value, assistantMessage];
+                chat.streamState.value = null;
+                chat.status.value = ChatStatus.IDLE;
+            });
+
+            this.cancelled = false;
+        }
     }
 }
 

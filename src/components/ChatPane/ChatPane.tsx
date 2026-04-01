@@ -1,14 +1,12 @@
-import style from './style.scss';
+import style from './style.module.scss';
 
 import ChatDisplay from '../ChatDisplay/ChatDisplay';
-import ChatEditor from '../ChatEditor/ChatEditor';
 import ChatInputBox from '../ChatInputBox/ChatInputBox';
 
 const ChatPane = () => {
     return (
         <div className={style.chatPane}>
-            {<ChatDisplay />}
-            {<ChatEditor />}
+            <ChatDisplay />
             <ChatInputBox />
         </div>
     );

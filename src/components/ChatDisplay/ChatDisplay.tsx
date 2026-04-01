@@ -1,31 +1,14 @@
-import style from './style.scss';
+import style from './style.module.scss';
 
 import type {JSX} from 'preact';
-import {batch, useComputed, useSignal} from '@preact/signals';
 import {useLayoutEffect, useMemo, useRef} from 'preact/hooks';
-import {Tree, type SyntaxNodeRef, TreeFragment} from '@lezer/common';
+import {type SyntaxNodeRef} from '@lezer/common';
 
-import {useAppState} from '../../app-state';
+import {useAppState, ChatStatus, type StreamState} from '../../app-state';
+import {useController} from '../../controller/context';
 import {parser} from '../../text-processing/markdown';
 import {SyntaxNodeCache} from '../../util/syntax-node-cache';
-import {TextChangeEvent} from '../../controller/text-history';
-
-const DEBUG: boolean = false;
-
-const renderDebugMarkdown = (
-    node: SyntaxNodeRef | string,
-    children: (JSX.Element | string)[] | null,
-    doc: string,
-    depth: number
-) => {
-    if (typeof node === 'string') return `${'    '.repeat(depth)}${JSON.stringify(node)}\n`;
-    return <span>
-        {`${'    '.repeat(depth)}`}(<span key={Math.random()} className={style.markdownNode}>{node.node.type.name} {node.from}-{node.to}</span>
-        {children ? <><br />
-            <span>{children}</span>
-            {`${'    '.repeat(depth)}`})</> : ')'}<br />
-    </span>;
-};
+import type {Message, Attachment} from '../../controller/message';
 
 enum SpecialNodeType {
     CodeText,
@@ -53,8 +36,6 @@ const isSpecialNode = (node: ChildNode): node is SpecialNode =>
     node !== null && typeof node === 'object' && 'specialNodeType' in node;
 
 const htmlEntityMap = new Map<string, string>();
-// This is probably slow and convoluted, but nobody uses HTML entities in Markdown and it's not worth installing an npm
-// package containing the bajillion named character references just for those who do.
 const decodeHtmlEntity = (entity: string): string => {
     let decoded = htmlEntityMap.get(entity);
     if (typeof decoded === 'undefined') {
@@ -64,12 +45,9 @@ const decodeHtmlEntity = (entity: string): string => {
     return decoded;
 };
 
-// Sanitize link URLs to ensure that certain XSS-y ones can't be used.
 const sanitizeUrl = (url: string): string | null => {
     try {
-        const protocol = new URL('https://localhost').protocol;
-        // Remove the same types of links as markdown-it does:
-        // https://github.com/markdown-it/markdown-it/blob/master/docs/security.md
+        const protocol = new URL(url, 'https://localhost').protocol;
         if (/^(javascript|data|file):/.test(protocol)) return null;
     } catch {
         return null;
@@ -89,12 +67,10 @@ const renderMarkdown = (
         case 'Document': return <>{children}</>;
         case 'CodeBlock':
         case 'FencedCode': {
-            // Remove start/end whitespace outside the CodeText node
             const codeText = children?.find(
                 (child): child is SpecialNode & {specialNodeType: SpecialNodeType.CodeText} =>
                     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                     isSpecialNode(child) && child.specialNodeType === SpecialNodeType.CodeText);
-            // TODO: language directives, syntax highlight?
             return <pre><code>{codeText?.contents ?? null}</code></pre>;
         }
         case 'Blockquote': return <blockquote>{children}</blockquote>;
@@ -107,7 +83,6 @@ const renderMarkdown = (
                 return null;
             });
 
-            // TODO: we handle this by setting <p>s directly inside list items to display: inline; kinda hacky
             const isLoose = children?.some(child => typeof child === 'string' && /\n\n+/.test(child)) ?? false;
 
             return <ul className={isLoose ? undefined : style.tight}>{listItems}</ul>;
@@ -146,13 +121,13 @@ const renderMarkdown = (
         case 'ATXHeading5': return <h5>{children}</h5>;
         case 'ATXHeading6': return <h6>{children}</h6>;
         case 'HTMLBlock': return doc.slice(node.from, node.to);
-        case 'LinkReference': return null; // TODO: configure visibility
+        case 'LinkReference': return null;
         case 'Paragraph': return <p>{children?.length ? children : doc.slice(node.from, node.to)}</p>;
-        case 'CommentBlock': return null; // TODO: configure visibility
-        case 'ProcessingInstructionBlock': return doc.slice(node.from, node.to); // TODO: configure visibility
+        case 'CommentBlock': return null;
+        case 'ProcessingInstructionBlock': return doc.slice(node.from, node.to);
 
         // Inline
-        case 'Escape': return doc.slice(node.from + 1, node.to); // The backslash is included in the node; strip it off
+        case 'Escape': return doc.slice(node.from + 1, node.to);
         case 'Entity': return decodeHtmlEntity(doc.slice(node.from, node.to));
         case 'HardBreak': return <br />;
         case 'Emphasis': return <em>{children}</em>;
@@ -170,10 +145,10 @@ const renderMarkdown = (
 
             return <a href={url} title={linkTitle}>{linkText}</a>;
         }
-        case 'Image': return doc.slice(node.from, node.to); // TODO: figure out what to do for this
+        case 'Image': return doc.slice(node.from, node.to);
         case 'InlineCode': return <code>{children}</code>;
         case 'HTMLTag': return doc.slice(node.from, node.to);
-        case 'Comment': return null; // TODO: configure visibility
+        case 'Comment': return null;
         case 'ProcessingInstruction': return doc.slice(node.from, node.to);
         case 'Autolink': {
             const url = children?.find(
@@ -188,7 +163,6 @@ const renderMarkdown = (
         case 'HeaderMark':
         case 'EmphasisMark':
         case 'QuoteMark': return null;
-        // Needed to start ordered lists at the correct number
         case 'ListMark': return {
             specialNodeType: SpecialNodeType.ListMark,
             contents: doc.slice(node.from, node.to)
@@ -202,9 +176,9 @@ const renderMarkdown = (
         case 'CodeInfo': return null;
         case 'LinkTitle': return {
             specialNodeType: SpecialNodeType.LinkTitle,
-            contents: doc.slice(node.from + 1, node.to - 1) // Trim quotes / parens
+            contents: doc.slice(node.from + 1, node.to - 1)
         } as const;
-        case 'LinkLabel': return null; // TODO: resolve link references(?)
+        case 'LinkLabel': return null;
         case 'URL': return {
             specialNodeType: SpecialNodeType.URL,
             contents: doc.slice(node.from, node.to)
@@ -214,83 +188,173 @@ const renderMarkdown = (
     return <span className={style.unimplementedNode}>{node.type.name} unimplemented</span>;
 };
 
-const ChatDisplay = () => {
-    const {chat} = useAppState();
+const MessageHeader = ({role}: {role: 'user' | 'assistant'}) => (
+    <div className={style.messageHeader}>
+        <div className={`${style.avatar} ${role === 'user' ? style.userAvatar : style.assistantAvatar}`}>
+            {role === 'user' ? 'U' : ':3'}
+        </div>
+        <div className={style.roleName}>{role === 'user' ? 'You' : 'uwurandom'}</div>
+    </div>
+);
+
+const formatSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const AttachmentChips = ({attachments}: {attachments: Attachment[]}) => (
+    <div className={style.attachmentList}>
+        {attachments.map((file, i) => (
+            <div key={i} className={style.attachmentChip}>
+                <span className={style.attachmentName}>{file.name}</span>
+                <span className={style.attachmentSize}>{formatSize(file.size)}</span>
+            </div>
+        ))}
+    </div>
+);
+
+/** Renders a completed message with one-shot parsing. */
+const CompletedMessage = ({message}: {message: Message}) => {
     const markdownCache = useMemo(() => new SyntaxNodeCache(), []);
-    const chatDisplayElem = useRef<HTMLDivElement>(null);
-    const isScrolledToBottom = useRef<boolean>(true);
 
-    const markdownTree = useSignal<{tree: Tree, fragments: readonly TreeFragment[]} | null>(null);
-
-    const doc = useSignal('');
-
-    useLayoutEffect(() => {
-        const history = chat.history.value;
-
-        const tree = parser.parse(history.contents.value);
-        batch(() => {
-            markdownTree.value = {tree, fragments: TreeFragment.addTree(tree)};
-            doc.value = history.contents.value;
-        });
-
-        const listener = ({change}: TextChangeEvent) => {
-            let {tree, fragments} = markdownTree.value!;
-
-            fragments = TreeFragment.applyChanges(fragments, [{
-                fromA: change.from,
-                toA: change.to,
-                fromB: change.from,
-                toB: change.from + change.inserted.length
-            }]);
-            tree = parser.parse(history.contents.value, fragments);
-            fragments = TreeFragment.addTree(tree, fragments);
-
-            batch(() => {
-                markdownTree.value = {tree, fragments};
-                doc.value = history.contents.value;
-            });
-        };
-
-        history.addEventListener('textchange', listener);
-
-        return () => {
-            history.removeEventListener('textchange', listener);
-        };
-    }, [chat.history.value]);
-
-    const rendered = useComputed(() => {
-        if (!markdownTree.value) return null;
-        const {tree} = markdownTree.value;
-        return markdownCache.mapNodes(tree, doc.value, renderMarkdown);
-    });
-
-    // Auto-scroll to include new lines if we're scrolled to the bottom
-    useLayoutEffect(() => {
-        const chatDisplay = chatDisplayElem.current!;
-
-        const shouldScrollToBottom = isScrolledToBottom.current;
-        isScrolledToBottom.current = chatDisplay.scrollHeight - chatDisplay.clientHeight <= chatDisplay.scrollTop;
-
-        if (shouldScrollToBottom) {
-            chatDisplay.scrollTo({top: chatDisplay.scrollHeight - chatDisplay.clientHeight + 1});
-        }
-
-    }, [rendered.value]);
-
-    const debug = useComputed(() => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!DEBUG || !markdownTree.value) return null;
-        const {tree} = markdownTree.value;
-        return <>
-            <hr />
-            <div>{markdownCache.mapNodes(tree, doc.value, renderDebugMarkdown)}</div>
-        </>;
-    }).value;
+    const rendered = useMemo(() => {
+        if (message.content.length === 0) return null;
+        const tree = parser.parse(message.content);
+        return markdownCache.mapNodes(tree, message.content, renderMarkdown);
+    }, [message.content]);
 
     return (
-        <div className={style.chatDisplay} ref={chatDisplayElem}>
+        <div className={style.message}>
+            <MessageHeader role={message.role} />
+            {message.attachments && <AttachmentChips attachments={message.attachments} />}
             <div className={style.markdown}>{rendered}</div>
-            {debug}
+        </div>
+    );
+};
+
+const CAT_ACTIONS = [
+    'Chasing a laser pointer',
+    'Knocking things off the table',
+    'Batting around a little ball of yarn',
+    'Staring at nothing',
+    'Zooming around',
+    'Sitting on the keyboard',
+    'Ignoring you on purpose',
+    'Investigating a cardboard box',
+    'Kneading a blanket',
+    'Loafing',
+    'Stealing your chair',
+    'Meowing at a closed door',
+    'Sitting in a doorway',
+    'Knocking over a glass of water',
+    'Demanding treats'
+];
+
+const pickCatAction = () => CAT_ACTIONS[Math.floor(Math.random() * CAT_ACTIONS.length)];
+
+const ThinkingMessage = () => {
+    const action = useMemo(pickCatAction, []);
+
+    return (
+        <div className={style.message}>
+            <MessageHeader role="assistant" />
+            <div className={style.thinking}>
+                <span className={style.thinkingText}>{action}</span>
+                <span className={style.loader}>
+                    <span className={style.dot} /><span className={style.dot} /><span className={style.dot} />
+                </span>
+            </div>
+        </div>
+    );
+};
+
+/** Renders the currently-streaming assistant message with incremental parsing. */
+const StreamingMessage = ({streamState}: {streamState: StreamState}) => {
+    const markdownCache = useMemo(() => new SyntaxNodeCache(), []);
+
+    const rendered = useMemo(() => {
+        const {tree, content} = streamState;
+        if (content.length === 0) return null;
+        return markdownCache.mapNodes(tree, content, renderMarkdown);
+    }, [streamState]);
+
+    return (
+        <div className={style.message}>
+            <MessageHeader role="assistant" />
+            <div className={style.markdown}>{rendered}<span className={style.cursor} /></div>
+        </div>
+    );
+};
+
+const SUGGESTIONS = [
+    'Tell me about quantum physics',
+    'Write me a poem about fish',
+    'Explain the meaning of life',
+    'What\'s your favorite food?'
+];
+
+const WelcomeScreen = () => {
+    const controller = useController();
+
+    return (
+        <div className={style.welcome}>
+            <div className={style.welcomeAvatar}>:3</div>
+            <h1 className={style.welcomeTitle}>uwurandom</h1>
+            <p className={style.welcomeSubtitle}>How can I help you today?</p>
+            <div className={style.suggestions}>
+                {SUGGESTIONS.map(text => (
+                    <button
+                        key={text}
+                        className={style.suggestion}
+                        onClick={() => void controller.sendMessage(text)}
+                    >{text}</button>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const ChatDisplay = () => {
+    const {chat} = useAppState();
+    const chatDisplayElem = useRef<HTMLDivElement>(null);
+    const anchorElem = useRef<HTMLDivElement>(null);
+    const pinnedToBottom = useRef<boolean>(true);
+
+    const messages = chat.messages.value;
+    const streamState = chat.streamState.value;
+    const status = chat.status.value;
+    const isEmpty = messages.length === 0 && status === ChatStatus.IDLE;
+
+    // Detect when user scrolls away from the bottom
+    const onScroll = () => {
+        const el = chatDisplayElem.current!;
+        pinnedToBottom.current = el.scrollHeight - el.clientHeight - el.scrollTop < 30;
+    };
+
+    // Scroll to bottom when pinned and content changes
+    useLayoutEffect(() => {
+        if (pinnedToBottom.current) {
+            anchorElem.current!.scrollIntoView({block: 'end'});
+        }
+    });
+
+    // Pin to bottom when thinking/generating starts
+    useLayoutEffect(() => {
+        if (status !== ChatStatus.IDLE) {
+            pinnedToBottom.current = true;
+        }
+    }, [status]);
+
+    return (
+        <div className={style.chatDisplay} ref={chatDisplayElem} onScroll={onScroll}>
+            {isEmpty && <WelcomeScreen />}
+            {messages.map(message => (
+                <CompletedMessage key={message.id} message={message} />
+            ))}
+            {status === ChatStatus.THINKING && <ThinkingMessage />}
+            {streamState && <StreamingMessage streamState={streamState} />}
+            <div className={style.scrollAnchor} ref={anchorElem} />
         </div>
     );
 };

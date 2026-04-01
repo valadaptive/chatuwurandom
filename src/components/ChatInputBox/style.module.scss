@@ -1,0 +1,78 @@
+@use '../../theme.scss';
+
+.chat-input-box {
+    flex: 0 0 auto;
+    padding: 0.75rem 0;
+}
+
+.input-pill {
+    background-color: theme.$base-color-tertiary;
+    border-radius: 1.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+}
+
+.input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.textbox {
+    flex: 1 1 auto;
+    line-height: 1.5rem;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: theme.$text;
+    font-size: inherit;
+    font-family: inherit;
+    resize: none;
+    padding: 0.25rem 0;
+
+    &::placeholder {
+        color: theme.$text-detail;
+    }
+}
+
+.buttons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    flex-shrink: 0;
+    height: 2rem;
+}
+
+.attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0.25rem 0.25rem 0.5rem;
+}
+
+.file-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background-color: theme.$base-color-secondary;
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+    font-size: 0.8rem;
+    max-width: 200px;
+}
+
+.file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: theme.$text;
+}
+
+.file-size {
+    color: theme.$text-detail;
+    white-space: nowrap;
+    flex-shrink: 0;
+}

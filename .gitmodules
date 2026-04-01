@@ -1,0 +1,3 @@
+[submodule "uwurandom"]
+	path = uwurandom
+	url = https://github.com/valadaptive/uwurandom

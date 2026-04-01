@@ -15,13 +15,14 @@
 		"target": "es2020",
 		"noErrorTruncation": true,
 		"outDir": "build",
-		"lib": ["es2021", "WebWorker", "DOM"]
+		"lib": ["es2021", "WebWorker", "DOM"],
+		"baseUrl": ".",
+		"paths": {
+			"uwurandom": ["./uwurandom/uwurandom-js/dist/uwurandom.d.mts"]
+		}
 	},
 	"include": [
 		"src/**/*",
 		"test/**/*.test.ts"
-	],
-	"types": [
-		"@types/wicg-file-system-access"
 	]
 }

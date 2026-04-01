@@ -1,0 +1,15 @@
+@use '../../theme.scss';
+
+.chat-pane {
+    background-color: theme.$base-color-primary;
+
+    padding: 0 1rem;
+    flex: 1 1 auto;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}

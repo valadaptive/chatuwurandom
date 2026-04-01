@@ -1,0 +1,18 @@
+@font-face {
+  font-family: "Inter";
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100;
+  src: url("Inter.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-display: swap;
+  font-style: oblique 9.399deg;
+  font-weight: 400 700;
+  font-stretch: 100;
+  src: url("Inter-Italic.woff2") format("woff2");
+}
+

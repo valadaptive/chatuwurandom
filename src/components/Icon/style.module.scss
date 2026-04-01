@@ -1,0 +1,43 @@
+@use '../../theme.scss' as theme;
+
+.icon {
+    width: 24px;
+    height: 24px;
+    background-color: currentColor;
+    display: inline-block;
+}
+
+.button {
+    cursor: pointer;
+    background-color: theme.$interactive-normal;
+    transition: background-color 0.175s ease;
+
+    &:hover {
+        background-color: theme.$interactive-hover;
+    }
+
+    &:active {
+        background-color: theme.$interactive-active;
+    }
+
+    &.disabled {
+        background-color: theme.$interactive-muted;
+        cursor: not-allowed;
+    }
+}
+
+.attach {
+    mask-image: url('../../assets/icons/attach.svg');
+}
+
+.cancel {
+    mask-image: url('../../assets/icons/cancel.svg');
+}
+
+.close {
+    mask-image: url('../../assets/icons/close.svg');
+}
+
+.send {
+    mask-image: url('../../assets/icons/send.svg');
+}

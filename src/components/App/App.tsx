@@ -1,30 +1,12 @@
-import style from './style.scss';
+import style from './style.module.scss';
 
-import HomePane from '../HomePane/HomePane';
 import ChatPane from '../ChatPane/ChatPane';
-import SettingsPane from '../SettingsPane/SettingsPane';
-import TabbedPanel from '../TabbedPanel/TabbedPanel';
-import GrammarPane from '../GrammarPane/GrammarPane';
 
 const App = () => {
     return (
         <div className={style.app}>
-            <TabbedPanel tabs={[
-                {
-                    id: 'home',
-                    panel: <HomePane />,
-                    title: 'Home'
-                },
-                {
-                    id: 'settings',
-                    panel: <SettingsPane />,
-                    title: 'Settings'
-                }
-            ]} initialTab='home' />
             <ChatPane />
-            <GrammarPane />
         </div>
-
     );
 };
 
